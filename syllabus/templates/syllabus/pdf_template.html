@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Syllabus - {{ syllabus.course_code }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.8cm 1.5cm 2.5cm 1.5cm;
+            @bottom-left  { content: "Dept. of CSE"; font-family: "Times New Roman", serif; font-size: 10pt; }
+            @bottom-right { content: "Page " counter(page); font-family: "Times New Roman", serif; font-size: 10pt; }
+        }
+        body { font-family: "Times New Roman", Times, serif; font-size: 11pt; line-height: 1.4; color: #000; }
+        h1,h2,h3,h4 { margin: 5px 0; }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .section-title { font-weight: bold; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; }
+
+        /* ── Header ── */
+        .header-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+        .header-logo, .header-naac { width: 72px; height: 72px; flex-shrink: 0; object-fit: contain; }
+        .header-center { text-align: center; flex: 1; }
+        .header-jai      { font-size: 10pt; color: #000; }
+        .header-trust    { font-size: 11pt; font-weight: bold; color: #8B0000; }
+        .header-institute{ font-size: 22pt; font-weight: bold; color: #8B0000; }
+        .header-address  { font-size: 10pt; color: #000; font-weight: bold; }
+        .header-approved { font-size: 10pt; color: #000; font-weight: bold; }
+        .header-acc1 { font-size: 9.5pt; color: #8B0000; font-style: italic; }
+        .header-acc2 { font-size: 9.5pt; color: #00008B; font-style: italic; }
+        .header-acc3 { font-size: 9.5pt; color: #8B0000; font-style: italic; }
+        .header-dept { font-size: 12pt; font-weight: bold; color: #000; margin-top: 4px; }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 0; page-break-inside: avoid; }
+        th, td { border: 1px solid black; padding: 5px 8px; vertical-align: middle; }
+        .table-hdr { font-weight: bold; background: #f2f2f2; }
+        .section-hdr td { font-weight: bold; padding: 5px 8px; }
+
+        /* ── Module Layout ── */
+        .module-header { margin-top: 15px; font-weight: bold; }
+        .module-title { float: left; }
+        .module-hours { float: right; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+        .module-content { margin-top: 5px; text-align: justify; }
+    </style>
+</head>
+<body>
+
+    <!-- ── Institutional Header ── -->
+    <div class="header-wrapper">
+        <img src="{{ sjbit_logo }}" class="header-logo" alt="SJBIT Logo">
+        <div class="header-center">
+            <div class="header-jai">|| Jai Sri Gurudev ||</div>
+            <div class="header-trust">Sri Adichunchanagiri Shikshana Trust (R)</div>
+            <div class="header-institute">SJB Institute of Technology</div>
+            <div class="header-address">BGS Health and Education City, Dr. Vishnuvardhana Road, Kengeri, Bengaluru-560060</div>
+            <div class="header-approved">Approved by AICTE, New Delhi.</div>
+            <div class="header-acc1">Autonomous Institute affiliated to Visvesvaraya Technological University, Belagavi</div>
+            <div class="header-acc2">Accredited by NAAC with &lsquo;A+&rsquo;grade, Certified by ISO 9001 - 2015</div>
+            <div class="header-acc3">Recognized by UGC, New Delhi with 2(f) &amp; 12 (B)</div>
+            <div class="header-dept">BE in Computer Science and Engineering</div>
+        </div>
+        <img src="{{ naac_logo }}" class="header-naac" alt="NAAC A+">
+    </div>
+
+    <!-- ── Course Metadata Table (6 columns) ── -->
+    <table>
+        <tr>
+            <td class="bold" style="width:13%;">Semester:</td>
+            <td style="width:5%; text-align:center;">{{ syllabus.semester }}</td>
+            <td class="bold" style="width:15%;">Course Type:</td>
+            <td style="text-align:center;" colspan="3">{{ syllabus.course_type }}</td>
+        </tr>
+        <tr>
+            <td colspan="6" class="bold">Course Title: {{ syllabus.title }}</td>
+        </tr>
+        <tr>
+            <td class="bold">Course Code:</td>
+            <td style="text-align:center; font-weight:bold;" colspan="2">{{ syllabus.course_code }}</td>
+            <td class="bold" style="text-align:right;" colspan="2">Credits:</td>
+            <td style="text-align:center;">{{ syllabus.credits }}</td>
+        </tr>
+        <tr>
+            <td class="bold text-center" colspan="3">Teaching Hours/Week (L:T:P:O)</td>
+            <td style="text-align:center;">{{ syllabus.teaching_hours_display }}</td>
+            <td class="bold">Total Hours:</td>
+            <td style="text-align:center;">{{ syllabus.total_hours }}</td>
+        </tr>
+        <tr>
+            <td class="bold">CIE Marks:</td>
+            <td style="text-align:center;">{{ syllabus.cie_marks }}</td>
+            <td class="bold">SEE Marks:</td>
+            <td style="text-align:center;">50</td>
+            <td class="bold">Total Marks:</td>
+            <td style="text-align:center;">{{ syllabus.total_marks }}</td>
+        </tr>
+        <tr>
+            <td class="bold">SEE Type:</td>
+            <td colspan="3" style="text-align:center;">{{ syllabus.see_type }}</td>
+            <td class="bold">Exam Hours:</td>
+            <td style="text-align:center;">{{ syllabus.exam_hours }}</td>
+        </tr>
+        <tr>
+            <td colspan="6" style="height:28px;"></td>
+        </tr>
+    </table>
+
+    <!-- ── Course Objectives + Teaching-Learning Process (joined table) ── -->
+    <table>
+        <tr class="section-hdr">
+            <td><strong>I. Course Objectives:</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 12px;">{{ syllabus.objectives|linebreaksbr }}</td>
+        </tr>
+        <tr class="section-hdr">
+            <td><strong>II. Teaching-Learning Process (General Instructions):</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 12px;">{{ syllabus.teaching_learning|linebreaksbr }}</td>
+        </tr>
+    </table>
+
+    <!-- ── Course Content ── -->
+    <div class="section-title">III. Course Content</div>
+    {% for module in syllabus.modules.all %}
+        {% if not module.is_deleted %}
+        <div class="module-header clearfix">
+            <div class="module-title">{{ module.title }}</div>
+            <div class="module-hours">{{ module.teaching_hours }} Hrs</div>
+        </div>
+        <div class="module-content">{{ module.content|linebreaksbr }}</div>
+        <div class="module-content">
+            <span class="bold">Hands on:</span><br>
+            {{ module.hands_on|linebreaksbr }}
+        </div>
+        <div class="module-content">
+            <span class="bold">RBT Levels:</span> {{ module.rbt_levels }}
+        </div>
+        {% endif %}
+    {% endfor %}
+
+    <!-- ── CO-PO-PSO Mapping ── -->
+    <div class="section-title" style="page-break-before: always;">V. CO-PO-PSO Mapping (mark H=3; M=2; L=1)</div>
+    <table>
+        <tr class="table-hdr text-center">
+            <th>PO/PSO</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+            <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+            <th>S1</th><th>S2</th><th>S3</th>
+        </tr>
+        <tr class="text-center"><th>CO1</th><td>2</td><td>2</td><td></td><td>2</td><td>2</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr class="text-center"><th>CO2</th><td>2</td><td>2</td><td></td><td>2</td><td>2</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr class="text-center"><th>CO3</th><td>2</td><td>2</td><td></td><td>2</td><td>2</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr class="text-center"><th>CO4</th><td>2</td><td>2</td><td></td><td>2</td><td>2</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr class="text-center"><th>CO5</th><td>2</td><td>2</td><td></td><td>2</td><td>2</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </table>
+
+    <!-- ── Learning Resources ── -->
+    <div class="section-title">VII. Learning Resources</div>
+    <div class="bold">VII(a): Textbooks:</div>
+    <div>{{ syllabus.textbooks|linebreaksbr }}</div>
+    <br>
+    <div class="bold">VII(b): Reference Books:</div>
+    <div>{{ syllabus.reference_books|linebreaksbr }}</div>
+
+</body>
+</html>
