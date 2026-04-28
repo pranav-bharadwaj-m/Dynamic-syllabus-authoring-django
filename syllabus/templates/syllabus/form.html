@@ -1,308 +1,410 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Syllabus Authoring Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-        .card-header { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; font-weight: bold; }
-        .module-card { border-left: 5px solid #4f46e5; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; border-radius: 10px; transition: opacity 0.4s, transform 0.4s; }
-        .module-card.deleting { opacity: 0; transform: translateX(30px); pointer-events: none; }
-        .form-label { font-weight: 600; font-size: 0.85rem; color: #374151; }
-        .hours-sep { font-size: 1.3rem; font-weight: bold; line-height: 38px; color: #6b7280; }
-        .btn-delete-module { background: none; border: none; color: #dc2626; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s; padding: 4px 8px; }
-        .btn-delete-module:hover { transform: scale(1.2); color: #b91c1c; }
-
-        /* Undo Toast */
-        #undo-toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .undo-toast { background: #1f2937; color: #fff; border-radius: 10px; padding: 14px 20px; min-width: 280px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: slideIn 0.3s ease; }
-        .undo-toast .toast-progress { height: 3px; background: #4f46e5; border-radius: 2px; margin-top: 8px; animation: shrink linear forwards; }
-        .undo-toast .btn-undo { background: #4f46e5; border: none; color: white; border-radius: 6px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
-        .undo-toast .btn-undo:hover { background: #4338ca; }
-        @keyframes slideIn { from { transform: translateX(100px); opacity:0; } to { transform: translateX(0); opacity:1; } }
-        @keyframes shrink { from { width: 100%; } to { width: 0%; } }
-
-        .section-badge { display: inline-block; background: #ede9fe; color: #5b21b6; border-radius: 6px; padding: 2px 10px; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
-    </style>
+<meta charset="UTF-8">
+<title>Syllabus Authoring Portal</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
+.card-header{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:700;}
+.module-card{border-left:5px solid #4f46e5;box-shadow:0 4px 10px rgba(0,0,0,.08);margin-bottom:20px;border-radius:10px;transition:opacity .4s,transform .4s;}
+.module-card.deleting{opacity:0;transform:translateX(30px);pointer-events:none;}
+.form-label{font-weight:600;font-size:.85rem;color:#374151;}
+.hours-sep{font-size:1.3rem;font-weight:700;line-height:38px;color:#6b7280;}
+.btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;transition:transform .2s;}
+.btn-icon.red{color:#dc2626;font-size:1.1rem;} .btn-icon.red:hover{transform:scale(1.2);}
+.btn-icon.green{color:#16a34a;font-size:1.1rem;}
+.section-badge{display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:6px;padding:2px 10px;font-size:.78rem;font-weight:600;margin-bottom:6px;}
+.handson-area{display:none;}
+.tb-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;}
+.tb-row input{flex:1;}
+.tb-row .sl{width:40px;text-align:center;font-weight:700;color:#4f46e5;}
+.lab-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;padding:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;}
+.lab-row .lab-sl{width:60px;}
+.lab-row textarea{flex:1;}
+#undo-toast-container{position:fixed;bottom:30px;right:30px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
+.undo-toast{background:#1f2937;color:#fff;border-radius:10px;padding:14px 20px;min-width:280px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideIn .3s ease;}
+.undo-toast .toast-progress{height:3px;background:#4f46e5;border-radius:2px;margin-top:8px;animation:shrink linear forwards;}
+.undo-toast .btn-undo{background:#4f46e5;border:none;color:#fff;border-radius:6px;padding:4px 12px;font-size:.8rem;cursor:pointer;font-weight:700;}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes shrink{from{width:100%}to{width:0%}}
+.rbt-check-group{display:flex;flex-wrap:wrap;gap:10px;}
+.rbt-check-group label{display:flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;}
+/* Content type sections */
+.section-theory,.section-lab{display:none;}
+</style>
 </head>
 <body class="p-4">
 <div class="container">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📝 Draft Syllabus</h2>
-        <span class="badge bg-warning text-dark fs-6">Status: Draft</span>
-    </div>
-
-    <form method="POST" id="syllabus-form">
-        {% csrf_token %}
-
-        <!-- ── Course Metadata ───────────────────────────────────── -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header">📋 Course Metadata</div>
-            <div class="card-body">
-
-                <!-- Row 1: Code | Title | Credits -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-2">
-                        <label class="form-label">Course Code</label>
-                        {{ form.course_code }}
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Course Title</label>
-                        {{ form.title }}
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Credits</label>
-                        {{ form.credits }}
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">Semester</label>
-                        {{ form.semester }}
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Course Type</label>
-                        {{ form.course_type }}
-                    </div>
-                </div>
-
-                <!-- Row 2: SEE Type | Teaching Hours L:T:P:O | Total Hours -->
-                <div class="row g-3 mb-3 align-items-end">
-                    <div class="col-md-2">
-                        <label class="form-label">SEE Type</label>
-                        {{ form.see_type }}
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Teaching Hours / Week (L : T : P : O)</label>
-                        <div class="d-flex align-items-center gap-1">
-                            {{ form.lec_hours }}
-                            <span class="hours-sep">:</span>
-                            {{ form.tut_hours }}
-                            <span class="hours-sep">:</span>
-                            {{ form.prac_hours }}
-                            <span class="hours-sep">:</span>
-                            {{ form.other_hours }}
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Total Hours</label>
-                        {{ form.total_hours }}
-                    </div>
-                </div>
-
-                <!-- Row 3: CIE Marks | Total Marks | Exam Hours -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-2">
-                        <label class="form-label">CIE Marks</label>
-                        {{ form.cie_marks }}
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">SEE Marks</label>
-                        <input type="text" class="form-control" value="50" readonly style="background:#f9fafb;">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Total Marks</label>
-                        {{ form.total_marks }}
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Exam Hours</label>
-                        {{ form.exam_hours }}
-                    </div>
-                </div>
-
-                <hr>
-
-                <!-- Row 4: Course Objectives -->
-                <div class="mb-3">
-                    <span class="section-badge">I. Course Objectives</span>
-                    <label class="form-label d-block">Enter objectives (one per line or numbered)</label>
-                    {{ form.objectives }}
-                </div>
-
-                <!-- Row 5: Teaching-Learning Process -->
-                <div class="mb-3">
-                    <span class="section-badge">II. Teaching-Learning Process</span>
-                    <label class="form-label d-block">General instructions / strategies</label>
-                    {{ form.teaching_learning }}
-                </div>
-
-                <hr>
-
-                <!-- Textbooks / References -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Primary Textbooks</label>
-                        {{ form.textbooks }}
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Reference Books</label>
-                        {{ form.reference_books }}
-                    </div>
-                </div>
-                <div class="mb-1">
-                    <label class="form-label">CO-PO Matrix (JSON)</label>
-                    {{ form.copo_matrix }}
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Course Modules ────────────────────────────────────── -->
-        <h4 class="mb-3">📚 Course Modules</h4>
-        {{ formset.management_form }}
-        <div id="formset-container">
-            {% for module_form in formset %}
-            <div class="card module-card module-form" data-index="{{ forloop.counter0 }}">
-                <div class="card-body row g-2">
-                    {{ module_form.id }}
-                    <!-- Dustbin button -->
-                    <div class="col-12 d-flex justify-content-between align-items-center mb-1">
-                        <strong class="text-secondary" style="font-size:0.9rem;">Module {{ forloop.counter }}</strong>
-                        <button type="button"
-                                class="btn-delete-module"
-                                title="Delete module"
-                                data-module-id="{{ module_form.instance.pk|default:'' }}">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                        <!-- Hidden DELETE checkbox for formset -->
-                        <div style="display:none;">{{ module_form.DELETE }}</div>
-                    </div>
-
-                    <div class="col-md-9">
-                        <label class="form-label">Module Title</label>
-                        {{ module_form.title }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Teaching Hours</label>
-                        {{ module_form.teaching_hours }}
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">Course Objectives</label>
-                        {{ module_form.course_objectives }}
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">Content</label>
-                        {{ module_form.content }}
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Hands-On / Self Learning</label>
-                        {{ module_form.hands_on }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">RBT Levels</label>
-                        {{ module_form.rbt_levels }}
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <button type="button" id="add-module" class="btn btn-outline-primary fw-bold mb-3">
-            + Add Another Module
-        </button>
-        <hr>
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="submit" class="btn btn-success btn-lg px-5">💾 Save Draft</button>
-        </div>
-    </form>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>📝 Draft Syllabus</h2>
+  <span class="badge bg-warning text-dark fs-6">Status: Draft</span>
 </div>
 
-<!-- Undo Toast Container -->
+<form method="POST" id="syllabus-form">
+{% csrf_token %}
+<!-- Hidden JSON for textbooks -->
+<input type="hidden" id="textbooks_json" name="textbooks_json" value="{{ syllabus.textbooks_json|default:'[]' }}">
+<input type="hidden" id="reference_books_json" name="reference_books_json" value="{{ syllabus.reference_books_json|default:'[]' }}">
+
+<!-- ── COURSE METADATA ── -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">📋 Course Metadata</div>
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <div class="col-md-2"><label class="form-label">Course Code</label>{{ form.course_code }}</div>
+      <div class="col-md-4"><label class="form-label">Course Title</label>{{ form.title }}</div>
+      <div class="col-md-2"><label class="form-label">Credits</label>{{ form.credits }}</div>
+      <div class="col-md-2" style="min-width:110px;"><label class="form-label">Semester</label>{{ form.semester }}</div>
+      <div class="col-md-2"><label class="form-label">Course Type</label>{{ form.course_type }}</div>
+      <div class="col-md-2"><label class="form-label">SEE Type</label>{{ form.see_type }}</div>
+    </div>
+    <div class="row g-3 mb-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">Teaching Hours / Week (L : T : P : O)</label>
+        <div class="d-flex align-items-center gap-1">
+          {{ form.lec_hours }}<span class="hours-sep">:</span>{{ form.tut_hours }}<span class="hours-sep">:</span>{{ form.prac_hours }}<span class="hours-sep">:</span>{{ form.other_hours }}
+        </div>
+      </div>
+      <div class="col-md-2"><label class="form-label">Total Hours</label>{{ form.total_hours }}</div>
+      <div class="col-md-2"><label class="form-label">CIE Marks</label>{{ form.cie_marks }}</div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-2"><label class="form-label">Total Marks</label>{{ form.total_marks }}</div>
+      <div class="col-md-2"><label class="form-label">Exam Hours</label>{{ form.exam_hours }}</div>
+    </div>
+    <hr>
+    <!-- Course Content Type -->
+    <div class="mb-3">
+      <label class="form-label fw-bold">📂 Course Content Type</label>
+      <div class="d-flex gap-4 mt-1">
+        {% for val, label in form.content_type.field.choices %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="content_type" id="ct_{{ val }}" value="{{ val }}"
+            {% if form.content_type.value == val or syllabus.content_type == val %}checked{% endif %}>
+          <label class="form-check-label fw-semibold" for="ct_{{ val }}">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── COURSE OBJECTIVES ── -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">I. Course Objectives</div>
+  <div class="card-body">{{ form.objectives }}</div>
+</div>
+
+<!-- ── TEACHING-LEARNING ── -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">II. Teaching-Learning Process</div>
+  <div class="card-body">{{ form.teaching_learning }}</div>
+</div>
+
+<!-- ── LAB DESCRIPTION (Lab Only) ── -->
+<div id="lab-desc-section" class="card mb-4 shadow-sm" style="display:none;">
+  <div class="card-header">Lab Course Description</div>
+  <div class="card-body">{{ form.lab_description }}</div>
+</div>
+
+<!-- ── COURSE CONTENT ── -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">III. Course Content</div>
+  <div class="card-body">
+
+    <!-- Theory Modules (shown for theory_only and theory_with_lab) -->
+    <div id="theory-section">
+      <div id="theory-label" class="text-center fw-bold mb-3" style="display:none;">III(a). Theory PART</div>
+      {{ formset.management_form }}
+      <div id="formset-container">
+        {% for mf in formset %}
+        <div class="card module-card module-form" data-index="{{ forloop.counter0 }}">
+          <div class="card-body row g-2">
+            {{ mf.id }}
+            <div class="col-12 d-flex justify-content-between align-items-center mb-1">
+              <strong class="text-secondary">Module {{ forloop.counter }}</strong>
+              <button type="button" class="btn-icon red btn-delete-module" title="Delete" data-module-id="{{ mf.instance.pk|default:'' }}">
+                <i class="fa fa-trash"></i></button>
+              <div style="display:none;">{{ mf.DELETE }}</div>
+            </div>
+            <div class="col-md-9"><label class="form-label">Module No. &amp; Title</label>
+              <div class="d-flex gap-2">{{ mf.module_number }}{{ mf.title }}</div>
+            </div>
+            <div class="col-md-3"><label class="form-label">Teaching Hours</label>{{ mf.teaching_hours }}</div>
+            <div class="col-12"><label class="form-label">Description <span class="text-danger">*</span></label>{{ mf.content }}</div>
+            <!-- Hands-on toggle -->
+            <div class="col-12">
+              <div class="form-check">
+                {{ mf.has_hands_on }}
+                <label class="form-check-label ms-2" for="{{ mf.has_hands_on.id_for_label }}">Hands-on activities present?</label>
+              </div>
+            </div>
+            <div class="col-12 handson-area">
+              <label class="form-label">Hands-on Content</label>{{ mf.hands_on }}
+            </div>
+            <div class="col-md-2"><label class="form-label">TB Number</label>{{ mf.tb_number }}</div>
+            <div class="col-md-4"><label class="form-label">Chapter</label>{{ mf.tb_chapter }}</div>
+            <div class="col-md-6"><label class="form-label">Section</label>{{ mf.tb_section }}</div>
+            <div class="col-12"><label class="form-label">Self-Learning</label>{{ mf.self_learning }}</div>
+            <div class="col-12"><label class="form-label">Prerequisites</label>{{ mf.prerequisites }}</div>
+            <!-- RBT Levels -->
+            <div class="col-12">
+              <label class="form-label">RBT Levels</label>
+              {{ mf.rbt_levels }}
+              <div class="rbt-check-group" data-for="{{ mf.rbt_levels.html_name }}">
+                {% for code,lbl in rbt_choices %}
+                <label>
+                  <input type="checkbox" value="{{ code }}"
+                    {% if code in mf.instance.rbt_levels %}checked{% endif %}> {{ lbl }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" id="add-module" class="btn btn-outline-primary fw-bold mb-3">+ Add Module</button>
+    </div>
+
+    <!-- Practical Part (theory_with_lab only) -->
+    <div id="practical-section" style="display:none;">
+      <div class="text-center fw-bold my-3">III(b). Practical PART</div>
+      {{ main_lab_fs.management_form }}
+      <table class="table table-bordered" id="lab-table-main">
+        <thead class="table-light"><tr><th style="width:80px;">Sl. No.</th><th>Experiments / Programs / Problems</th><th style="width:50px;"></th></tr></thead>
+        <tbody id="lab-body-main">
+          {% for lf in main_lab_fs %}
+          <tr class="lab-form-row">
+            {{ lf.id }}
+            <input type="hidden" name="{{ lf.is_additional.html_name }}" value="False">
+            <td>{{ lf.sl_no }}</td>
+            <td>{{ lf.title }}</td>
+            <td><button type="button" class="btn-icon red btn-del-lab" data-body="lab-body-main"><i class="fa fa-trash"></i></button>
+              <div style="display:none;">{{ lf.DELETE }}</div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="addLabRow('lab-body-main','labmain')"><i class="fa fa-plus"></i> Add Experiment</button>
+    </div>
+
+    <!-- Lab Only section -->
+    <div id="lab-only-section" style="display:none;">
+      <div class="row g-3 mb-3">
+        <div class="col-12"><label class="form-label">Prerequisites</label>{{ form.lab_prerequisites }}</div>
+        <div class="col-12"><label class="form-label">Self-Learning</label>{{ form.lab_self_learning }}</div>
+      </div>
+      {{ add_lab_fs.management_form }}
+      <div class="fw-bold mb-2">Experiments / Programs</div>
+      <table class="table table-bordered" id="lab-table-add">
+        <thead class="table-light"><tr><th style="width:80px;">Sl. No.</th><th>Experiments / Programs / Problems</th><th style="width:50px;"></th></tr></thead>
+        <tbody id="lab-body-add">
+          {% for lf in add_lab_fs %}
+          <tr class="lab-form-row">
+            {{ lf.id }}
+            <input type="hidden" name="{{ lf.is_additional.html_name }}" value="False">
+            <td>{{ lf.sl_no }}</td>
+            <td>{{ lf.title }}</td>
+            <td><button type="button" class="btn-icon red btn-del-lab" data-body="lab-body-add"><i class="fa fa-trash"></i></button>
+              <div style="display:none;">{{ lf.DELETE }}</div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="addLabRow('lab-body-add','labadd')"><i class="fa fa-plus"></i> Add Experiment</button>
+
+      <div class="fw-bold mt-4 mb-2">Additional Practice Programs</div>
+      <table class="table table-bordered" id="lab-table-extra">
+        <thead class="table-light"><tr><th style="width:80px;">Sl. No.</th><th>Programs</th><th style="width:50px;"></th></tr></thead>
+        <tbody id="lab-body-extra">
+        </tbody>
+      </table>
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="addLabRow('lab-body-extra','labadd')"><i class="fa fa-plus"></i> Add Program</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── TEXTBOOKS ── -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">VII. Learning Resources</div>
+  <div class="card-body">
+    <div class="section-badge mb-2">VII(a): Textbooks</div>
+    <div id="tb-container"></div>
+    <button type="button" class="btn btn-sm btn-outline-success mb-4" id="add-tb"><i class="fa fa-plus"></i> Add Textbook</button>
+
+    <div class="section-badge mb-2">VII(b): Reference Books</div>
+    <div id="ref-container"></div>
+    <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-ref"><i class="fa fa-plus"></i> Add Reference Book</button>
+
+    <div class="mt-3"><label class="form-label">CO-PO Matrix (JSON)</label>{{ form.copo_matrix }}</div>
+  </div>
+</div>
+
+<!-- Submit -->
+<div class="d-grid gap-2 d-md-flex justify-content-md-end mb-5">
+  <button type="submit" class="btn btn-success btn-lg px-5">💾 Save Draft</button>
+  <a href="/pdf/1/" target="_blank" class="btn btn-outline-primary btn-lg px-4">📄 Open PDF</a>
+</div>
+</form>
+</div>
+
 <div id="undo-toast-container"></div>
 
 <script>
 const CSRF = '{{ csrf_token }}';
+const RBT_LABELS = {L1:'Remembering',L2:'Understanding',L3:'Applying',L4:'Analyzing',L5:'Evaluating',L6:'Creating'};
 
-// ── Add Module ───────────────────────────────────────────────────────────
-$(document).ready(function () {
-    $('#add-module').click(function () {
-        let idx = parseInt($('#id_modules-TOTAL_FORMS').val());
-        let newForm = $('.module-form:first').clone(true);
+// ── Content Type toggle ───────────────────────────────────────────────────
+function applyContentType(val){
+  $('#theory-section').toggle(val==='theory_only'||val==='theory_with_lab');
+  $('#theory-label').toggle(val==='theory_with_lab');
+  $('#practical-section').toggle(val==='theory_with_lab');
+  $('#lab-only-section').toggle(val==='lab_only');
+  $('#lab-desc-section').toggle(val==='lab_only');
+}
+$('input[name="content_type"]').change(function(){ applyContentType(this.value); });
+applyContentType($('input[name="content_type"]:checked').val()||'theory_only');
 
-        newForm.find('input, textarea, select').each(function () {
-            let name = $(this).attr('name');
-            if (!name) return;
-            let newName = name.replace(/-\d+-/, '-' + idx + '-');
-            let newId = 'id_' + newName;
-            $(this).attr({ name: newName, id: newId }).val('').removeAttr('checked');
-        });
-
-        // Clear module-id for new module
-        newForm.find('.btn-delete-module').attr('data-module-id', '');
-        newForm.find('strong').text('Module ' + (idx + 1));
-        newForm.attr('data-index', idx);
-
-        $('#formset-container').append(newForm);
-        $('#id_modules-TOTAL_FORMS').val(idx + 1);
-    });
-
-    // ── Module Delete ────────────────────────────────────────────────────
-    $(document).on('click', '.btn-delete-module', function () {
-        const $card = $(this).closest('.module-card');
-        const moduleId = $(this).attr('data-module-id');
-
-        if (!moduleId) {
-            // Unsaved module — just remove from DOM and update total forms count
-            $card.addClass('deleting');
-            setTimeout(() => {
-                $card.remove();
-                reindexForms();
-            }, 400);
-            return;
-        }
-
-        // Existing module — soft-delete via AJAX
-        $.post('/module/delete/' + moduleId + '/', { csrfmiddlewaretoken: CSRF }, function (res) {
-            if (!res.ok) return;
-            $card.addClass('deleting');
-
-            showUndoToast(moduleId, $card, function () {
-                // Permanent delete after timer
-                $.post('/module/permanent-delete/' + moduleId + '/', { csrfmiddlewaretoken: CSRF });
-                setTimeout(() => $card.remove(), 100);
-            }, function () {
-                // Undo — restore
-                $.post('/module/restore/' + moduleId + '/', { csrfmiddlewaretoken: CSRF }, function (r) {
-                    if (r.ok) $card.removeClass('deleting');
-                });
-            });
-        });
-    });
+// ── RBT checkboxes → hidden JSON ─────────────────────────────────────────
+$(document).on('change','.rbt-check-group input[type=checkbox]',function(){
+  const grp=$(this).closest('.rbt-check-group');
+  const name=grp.data('for');
+  const vals=grp.find('input:checked').map((_,el)=>el.value).get();
+  $('input[name="'+name+'"],textarea[name="'+name+'"]').val(JSON.stringify(vals));
 });
 
-function reindexForms() {
-    $('#id_modules-TOTAL_FORMS').val($('.module-form').length);
+// ── Hands-on toggle ───────────────────────────────────────────────────────
+$(document).on('change','.handson-toggle',function(){
+  $(this).closest('.card-body').find('.handson-area').toggle(this.checked);
+});
+// Init on load
+$('.handson-toggle').each(function(){ $(this).closest('.card-body').find('.handson-area').toggle(this.checked); });
+
+// ── Add Module ────────────────────────────────────────────────────────────
+$('#add-module').click(function(){
+  const idx=parseInt($('#id_modules-TOTAL_FORMS').val());
+  const nf=$('.module-form:first').clone(true);
+  nf.find('input,textarea,select').each(function(){
+    const n=$(this).attr('name'); if(!n)return;
+    const nn=n.replace(/-\d+-/,'-'+idx+'-');
+    $(this).attr({name:nn,id:'id_'+nn}).val('').prop('checked',false);
+  });
+  nf.find('.rbt-check-group input[type=checkbox]').prop('checked',false);
+  nf.find('.btn-delete-module').attr('data-module-id','');
+  nf.find('strong').text('Module '+(idx+1));
+  nf.attr('data-index',idx);
+  nf.find('.handson-area').hide();
+  $('#formset-container').append(nf);
+  $('#id_modules-TOTAL_FORMS').val(idx+1);
+});
+
+// ── Delete Module (AJAX) ─────────────────────────────────────────────────
+$(document).on('click','.btn-delete-module',function(){
+  const $card=$(this).closest('.module-card');
+  const mid=$(this).attr('data-module-id');
+  if(!mid){ $card.addClass('deleting'); setTimeout(()=>$card.remove(),400); return; }
+  $.post('/module/delete/'+mid+'/',{csrfmiddlewaretoken:CSRF},res=>{
+    if(!res.ok)return;
+    $card.addClass('deleting');
+    showUndoToast(mid,$card,()=>$.post('/module/permanent-delete/'+mid+'/',{csrfmiddlewaretoken:CSRF}),
+      ()=>$.post('/module/restore/'+mid+'/',{csrfmiddlewaretoken:CSRF},r=>{if(r.ok)$card.removeClass('deleting');}));
+  });
+});
+function showUndoToast(id,$card,onExp,onUndo){
+  const D=5000;
+  const $t=$(`<div class="undo-toast"><div style="flex:1"><div>🗑️ Module deleted</div><div class="toast-progress" style="animation-duration:${D}ms"></div></div><button class="btn-undo">Undo</button></div>`);
+  $('#undo-toast-container').append($t);
+  const t=setTimeout(()=>{$t.remove();onExp();},D);
+  $t.find('.btn-undo').click(()=>{clearTimeout(t);$t.remove();onUndo();});
 }
 
-// ── Undo Toast ────────────────────────────────────────────────────────────
-function showUndoToast(moduleId, $card, onExpire, onUndo) {
-    const DURATION = 5000;
-    const toastId = 'toast-' + moduleId;
-
-    const $toast = $(`
-        <div class="undo-toast" id="${toastId}">
-            <div style="flex:1">
-                <div>🗑️ Module deleted</div>
-                <div class="toast-progress" style="animation-duration:${DURATION}ms"></div>
-            </div>
-            <button class="btn-undo">Undo</button>
-        </div>
-    `);
-
-    $('#undo-toast-container').append($toast);
-
-    const timer = setTimeout(() => {
-        $toast.remove();
-        onExpire();
-    }, DURATION);
-
-    $toast.find('.btn-undo').click(function () {
-        clearTimeout(timer);
-        $toast.remove();
-        onUndo();
-    });
+// ── Lab Experiment rows ───────────────────────────────────────────────────
+function addLabRow(bodyId, prefix){
+  const tbody=$('#'+bodyId);
+  const idx=tbody.find('tr').length;
+  const total=parseInt($('#id_'+prefix+'-TOTAL_FORMS').val()||0);
+  const row=$(`<tr class="lab-form-row">
+    <input type="hidden" name="${prefix}-${total}-id" value="">
+    <input type="hidden" name="${prefix}-${total}-is_additional" value="False">
+    <td><input type="number" name="${prefix}-${total}-sl_no" value="${idx+1}" class="form-control text-center" style="width:70px;" min="1"></td>
+    <td><textarea name="${prefix}-${total}-title" class="form-control" rows="2" placeholder="Experiment title"></textarea></td>
+    <td><button type="button" class="btn-icon red btn-del-lab" data-body="${bodyId}"><i class="fa fa-trash"></i></button></td>
+  </tr>`);
+  tbody.append(row);
+  $('#id_'+prefix+'-TOTAL_FORMS').val(total+1);
 }
+$(document).on('click','.btn-del-lab',function(){
+  const row=$(this).closest('tr');
+  row.find('input[name$="-DELETE"]').val('on');
+  row.hide();
+  renumberLab($(this).data('body'));
+});
+function renumberLab(bodyId){
+  $('#'+bodyId+' tr:visible').each((i,tr)=>{
+    $(tr).find('input[type=number]').first().val(i+1);
+  });
+}
+
+// ── Textbooks ─────────────────────────────────────────────────────────────
+function tbRow(data, idx, container, jsonId){
+  const d=data||{};
+  const canDel = idx > 0;
+  const row=$(`<div class="tb-row" data-idx="${idx}">
+    <span class="sl">${String(idx+1).padStart(2,'0')}</span>
+    <input class="form-control" placeholder="Title of the book" value="${(d.title||'').replace(/"/g,'&quot;')}">
+    <input class="form-control" placeholder="Name of the author" value="${(d.author||'').replace(/"/g,'&quot;')}">
+    <input class="form-control" placeholder="Edition and Year" value="${(d.edition_year||'').replace(/"/g,'&quot;')}">
+    <input class="form-control" placeholder="Name of the publisher" value="${(d.publisher||'').replace(/"/g,'&quot;')}">
+    ${canDel?'<button type="button" class="btn-icon red btn-del-tb"><i class="fa fa-trash"></i></button>':'<span style="width:34px;"></span>'}
+  </div>`);
+  row.on('input','input',()=>serializeTb(container,jsonId));
+  if(canDel) row.find('.btn-del-tb').click(function(){$(this).closest('.tb-row').remove();reindexTb(container,jsonId);});
+  return row;
+}
+function reindexTb(cont,jsonId){
+  $(cont+' .tb-row').each((i,r)=>{
+    $(r).find('.sl').text(String(i+1).padStart(2,'0'));
+    $(r).attr('data-idx',i);
+    // First row has no delete btn - update based on new index
+    if(i===0) $(r).find('.btn-del-tb').remove();
+  });
+  serializeTb(cont,jsonId);
+}
+function serializeTb(cont,jsonId){
+  const arr=[];
+  $(cont+' .tb-row').each((_,r)=>{
+    const ins=$(r).find('input');
+    arr.push({title:ins.eq(0).val(),author:ins.eq(1).val(),edition_year:ins.eq(2).val(),publisher:ins.eq(3).val()});
+  });
+  $(jsonId).val(JSON.stringify(arr));
+}
+function loadTbArr(arr, cont, jsonId){
+  // Always show at least one empty row
+  const data = (arr && arr.length) ? arr : [{}];
+  data.forEach((d,i)=>$(cont).append(tbRow(d,i,cont,jsonId)));
+  serializeTb(cont,jsonId);
+}
+
+$(function(){
+  // Use server-rendered JSON directly (avoids Python repr vs JSON mismatch)
+  loadTbArr({{ textbooks_json_str|safe }}, '#tb-container', '#textbooks_json');
+  loadTbArr({{ reference_books_json_str|safe }}, '#ref-container', '#reference_books_json');
+  $('#add-tb').click(()=>{
+    const n=$('#tb-container .tb-row').length;
+    $('#tb-container').append(tbRow(null,n,'#tb-container','#textbooks_json'));
+    serializeTb('#tb-container','#textbooks_json');
+  });
+  $('#add-ref').click(()=>{
+    const n=$('#ref-container .tb-row').length;
+    $('#ref-container').append(tbRow(null,n,'#ref-container','#reference_books_json'));
+    serializeTb('#ref-container','#reference_books_json');
+  });
+});
 </script>
 </body>
 </html>
