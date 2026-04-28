@@ -2,9 +2,12 @@ from django.db import models
 from django.contrib.auth.models import User
 
 STATUS_CHOICES = (
-    ('DRAFT', 'Draft'), ('FACULTY_APPROVED', '✅ Faculty Approved'),
-    ('BOS_APPROVED', '✅ BOS Approved'), ('HOD_APPROVED', '✅ HOD Approved'),
-    ('REJECTED', '❌ Rejected / Revision Required'),
+    ('DRAFT', 'Draft'), 
+    ('PENDING_HOD', '⏳ Pending HOD Approval'),
+    ('PENDING_ADMIN', '⏳ Pending Admin Approval'), 
+    ('APPROVED', '✅ Go ahead with implementation'),
+    ('REJECTED_BY_HOD', '❌ Rejected by HOD'),
+    ('REJECTED_BY_ADMIN', '❌ Rejected by Admin'),
 )
 SEMESTER_CHOICES = [('I','I'),('II','II'),('III','III'),('IV','IV'),('V','V'),('VI','VI'),('VII','VII'),('VIII','VIII')]
 COURSE_TYPE_CHOICES = [('PCC','PCC'),('IPCC','IPCC'),('PCCL','PCCL'),('PEC','PEC'),('OEC','OEC'),('ETC','ETC'),('AEC','AEC'),('PRJ','PRJ'),('HSMC','HSMC'),('NCMC','NCMC')]
@@ -15,39 +18,53 @@ RBT_DISPLAY = {'L1':'Remembering','L2':'Understanding','L3':'Applying','L4':'Ana
 
 
 class Syllabus(models.Model):
-    course_code       = models.CharField(max_length=20, unique=True)
-    title             = models.CharField(max_length=200)
-    credits           = models.IntegerField(default=3)
-    semester          = models.CharField(max_length=5, choices=SEMESTER_CHOICES, default='VI')
-    course_type       = models.CharField(max_length=10, choices=COURSE_TYPE_CHOICES, default='ETC')
+    course_code       = models.CharField(max_length=20, unique=True, default = "")
+    title             = models.CharField(max_length=200, default="")
+    credits           = models.IntegerField(default=0)
+    semester          = models.CharField(max_length=5, choices=SEMESTER_CHOICES, default='I')
+    course_type       = models.CharField(max_length=10, choices=COURSE_TYPE_CHOICES, default='PCC')
     see_type          = models.CharField(max_length=20, choices=SEE_TYPE_CHOICES, default='Theory')
     content_type      = models.CharField(max_length=20, choices=CONTENT_TYPE_CHOICES, default='theory_only')
 
-    lec_hours   = models.IntegerField(default=3)
+    lec_hours   = models.IntegerField(default=0)
     tut_hours   = models.IntegerField(default=0)
     prac_hours  = models.IntegerField(default=0)
-    other_hours = models.CharField(max_length=5, default='@')
-    total_hours = models.IntegerField(default=40)
-    cie_marks   = models.IntegerField(default=50)
-    total_marks = models.IntegerField(default=100)
-    exam_hours  = models.IntegerField(default=3)
+    other_hours = models.CharField(max_length=5, default=0)
+    total_hours = models.IntegerField(default=0)
+    lab_slots   = models.CharField(max_length=50, blank=True, default='')
+    cie_marks   = models.IntegerField(default=0)
+    see_marks   = models.IntegerField(default=0)
+    total_marks = models.IntegerField(default=0)
+    exam_hours  = models.IntegerField(default=0)
 
     objectives        = models.TextField(blank=True)
     teaching_learning = models.TextField(blank=True)
-
+    co_description    = models.TextField(default="", blank=True)
+    
     # Lab-only course-level fields
     lab_description   = models.TextField(blank=True)
     lab_prerequisites = models.TextField(blank=True)
     lab_self_learning = models.TextField(blank=True)
+
+    # --- Assessment Details ---
+    assessment_general_rules = models.TextField(blank=True)
+    assessment_cie           = models.TextField(blank=True)
+    assessment_see           = models.TextField(blank=True)
 
     # Structured textbooks stored as JSON lists
     # Each entry: {sl_no, title, author, edition_year, publisher}
     textbooks_json       = models.JSONField(default=list, blank=True)
     reference_books_json = models.JSONField(default=list, blank=True)
 
+    # --- Web Links & Activities ---
+    weblinks_custom         = models.TextField(blank=True)
+    weblinks_json           = models.JSONField(default=list, blank=True)
+    activity_based_learning = models.TextField(blank=True)
+
     created_by  = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
     copo_matrix = models.JSONField(default=dict, blank=True)
+    latest_remark = models.TextField(blank=True, help_text="Reason for rejection or approval comments.")
 
     @property
     def teaching_hours_display(self):
@@ -107,3 +124,14 @@ class ApprovalLog(models.Model):
 
     def __str__(self):
         return f"{self.syllabus.course_code} - {self.action}"
+    
+class CourseOutcome(models.Model):
+    syllabus = models.ForeignKey(Syllabus, related_name='course_outcomes', on_delete=models.CASCADE)
+    sl_no = models.PositiveIntegerField(default=1)
+    description = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['sl_no']
+
+    def __str__(self):
+        return f"CO{self.sl_no}"

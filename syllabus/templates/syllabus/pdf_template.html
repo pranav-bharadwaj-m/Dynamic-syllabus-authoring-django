@@ -5,13 +5,25 @@
 <title>Syllabus - {{ syllabus.course_code }}</title>
 <style>
 @page {
-    size: A4; margin: 1.8cm 1.5cm 2.5cm 1.5cm;
+    size: A4;
+    margin: 1.8cm 1.5cm 2.5cm 1.5cm;
     @bottom-left  { content: "Dept. of CSE"; font-family:"Times New Roman",serif; font-size:10pt; font-weight:bold; }
     @bottom-right { content: "Page " counter(page); font-family:"Times New Roman",serif; font-size:10pt; font-weight:bold; }
 }
-body { font-family:"Times New Roman",Times,serif; font-size:11pt; line-height:1.4; color:#000; }
-.text-center { text-align:center; }
-.bold { font-weight:bold; }
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+    margin: 0;
+    padding: 0;
+}
+
+.text-center { text-align: center; }
+.bold { font-weight: bold; }
 
 /* Header */
 .header-wrapper { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:6px; }
@@ -27,15 +39,132 @@ body { font-family:"Times New Roman",Times,serif; font-size:11pt; line-height:1.
 .header-acc3 { font-size:9.5pt; color:#8B0000; font-style:italic; }
 .header-dept { font-size:12pt; font-weight:bold; margin-top:4px; }
 
-/* Tables */
-table { width:100%; border-collapse:collapse; margin-bottom:0; }
-th,td { border:1px solid #000; padding:5px 8px; vertical-align:middle; }
-.no-border td,.no-border th { border:none; }
+/*
+ * THE FIX:
+ * box-decoration-break: clone — when a .doc-wrap splits across a page,
+ * WeasyPrint redraws the full border (including top) on the new page fragment.
+ * No more missing top border or gap at page start.
+ */
+.doc-wrap {
+    border: 1px solid #000;
+    width: 100%;
+    margin-top: -1px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
+.doc-row {
+    display: block;
+    border-bottom: 1px solid #000;
+    padding: 5px 8px;
+}
+
+/* Last row in a wrap should have no bottom border — the wrap border provides it */
+.doc-row:last-child {
+    border-bottom: none;
+}
+
+.section-heading {
+    display: block;
+    border-bottom: 1px solid #000;
+    padding: 8px;
+    font-weight: bold;
+    text-align: center;
+    font-size: 11pt;
+    text-transform: uppercase;
+}
+
+.subsection-heading {
+    display: block;
+    border-bottom: 1px solid #000;
+    padding: 8px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.mod-header {
+    display: flex;
+    border-bottom: 1px solid #000;
+}
+.mod-header .mod-title {
+    flex: 1;
+    padding: 5px 8px;
+    font-weight: bold;
+    border-right: 1px solid #000;
+}
+.mod-header .mod-hours {
+    width: 80px;
+    padding: 5px 8px;
+    text-align: center;
+}
+
+.co-row {
+    display: flex;
+    border-bottom: 1px solid #000;
+}
+.co-row:last-child {
+    border-bottom: none;
+}
+.co-row .co-num {
+    width: 10%;
+    padding: 5px 8px;
+    font-weight: bold;
+    text-align: center;
+    border-right: 1px solid #000;
+    flex-shrink: 0;
+}
+.co-row .co-desc {
+    flex: 1;
+    padding: 6px 12px;
+}
+
+/* Short-row tables — safe because rows never span a page */
+table.meta {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+}
+table.meta td, table.meta th {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    vertical-align: middle;
+}
+
+table.copo {
+    width: 100%;
+    border-collapse: collapse;
+}
+table.copo td, table.copo th {
+    border: 1px solid #000;
+    padding: 4px 3px;
+    text-align: center;
+    font-size: 10pt;
+}
+
+table.books {
+    width: 100%;
+    border-collapse: collapse;
+}
+table.books td, table.books th {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    vertical-align: middle;
+}
+
+table.exps {
+    width: 100%;
+    border-collapse: collapse;
+}
+table.exps td, table.exps th {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    vertical-align: middle;
+}
 </style>
 </head>
 <body>
 
-<!-- Header -->
+<!-- HEADER -->
 <div class="header-wrapper">
     <img src="{{ sjbit_logo }}" class="header-logo" alt="SJBIT">
     <div class="header-center">
@@ -52,8 +181,8 @@ th,td { border:1px solid #000; padding:5px 8px; vertical-align:middle; }
     <img src="{{ naac_logo }}" class="header-naac" alt="NAAC A+">
 </div>
 
-<!-- Metadata Table -->
-<table>
+<!-- METADATA GRID -->
+<table class="meta">
     <tr>
         <td class="bold" style="width:13%;">Semester:</td>
         <td style="width:5%;text-align:center;">{{ syllabus.semester }}</td>
@@ -71,13 +200,13 @@ th,td { border:1px solid #000; padding:5px 8px; vertical-align:middle; }
         <td class="bold text-center" colspan="3">Teaching Hours/Week (L:T:P:O)</td>
         <td style="text-align:center;">{{ syllabus.teaching_hours_display }}</td>
         <td class="bold">Total Hours:</td>
-        <td style="text-align:center;">{{ syllabus.total_hours }}</td>
+        <td>{{ syllabus.total_hours }}{% if syllabus.content_type == 'theory_with_lab' and syllabus.lab_slots %} + ({{ syllabus.lab_slots }} lab slots){% endif %}</td>
     </tr>
     <tr>
         <td class="bold">CIE Marks:</td>
         <td style="text-align:center;">{{ syllabus.cie_marks }}</td>
         <td class="bold">SEE Marks:</td>
-        <td style="text-align:center;">50</td>
+        <td style="text-align:center;">{{ syllabus.see_marks }}</td>
         <td class="bold">Total Marks:</td>
         <td style="text-align:center;">{{ syllabus.total_marks }}</td>
     </tr>
@@ -87,122 +216,219 @@ th,td { border:1px solid #000; padding:5px 8px; vertical-align:middle; }
         <td class="bold">Exam Hours:</td>
         <td style="text-align:center;">{{ syllabus.exam_hours }}</td>
     </tr>
-    <tr><td colspan="6" style="height:24px;"></td></tr>
 </table>
 
-<!-- Objectives + Teaching-Learning -->
-<table>
-    <tr><td class="bold">I. Course Objectives:</td></tr>
-    <tr><td style="padding:6px 12px;">{{ syllabus.objectives|linebreaksbr }}</td></tr>
+<!-- OBJECTIVES & TEACHING-LEARNING -->
+<div class="doc-wrap">
+    <div class="doc-row bold">I. Course Objectives:</div>
+    <div class="doc-row" style="padding:6px 12px;">{{ syllabus.objectives|linebreaksbr }}</div>
+
     {% if syllabus.content_type == 'lab_only' %}
-    <tr><td class="bold">Lab Course Description:</td></tr>
-    <tr><td style="padding:6px 12px;">{{ syllabus.lab_description|linebreaksbr }}</td></tr>
+    <div class="doc-row bold">Lab Course Description:</div>
+    <div class="doc-row" style="padding:6px 12px;">{{ syllabus.lab_description|linebreaksbr }}</div>
     {% endif %}
-    <tr><td class="bold">II. Teaching-Learning Process (General Instructions):</td></tr>
-    <tr><td style="padding:6px 12px;">{{ syllabus.teaching_learning|linebreaksbr }}</td></tr>
-</table>
 
-<!-- ── COURSE CONTENT ── -->
-{% if syllabus.content_type == 'theory_only' %}
-<table>
-    <tr><td class="bold text-center" colspan="2"><strong>III.&nbsp; COURSE CONTENT</strong></td></tr>
-    {% for mod in active_modules %}
-    <tr>
-        <td class="bold" style="width:80%;"><strong>Module-{{ mod.module_number }}: {{ mod.title }}</strong></td>
-        <td style="text-align:center;">Hrs {{ mod.teaching_hours }}</td>
-    </tr>
-    <tr><td colspan="2" style="padding:8px 12px;">{{ mod.content|linebreaksbr }}
-        {% if mod.tb_number %}<br><strong>Text Book {{ mod.tb_number }}:</strong> {{ mod.tb_chapter }}{% if mod.tb_section %}: {{ mod.tb_section }}{% endif %}{% endif %}
-        {% if mod.has_hands_on and mod.hands_on %}<br><strong>Hands-on:</strong> {{ mod.hands_on|linebreaksbr }}{% endif %}
-    </td></tr>
-    {% if mod.self_learning %}<tr><td colspan="2" style="padding:5px 12px;"><strong>Self-Learning:</strong> {{ mod.self_learning|linebreaksbr }}</td></tr>{% endif %}
-    {% if mod.prerequisites %}<tr><td colspan="2" style="padding:5px 12px;"><strong>Prerequisites:</strong> {{ mod.prerequisites|linebreaksbr }}</td></tr>{% endif %}
-    {% if mod.rbt_levels %}<tr><td colspan="2" style="padding:5px 12px;"><strong>RBT Levels:</strong> {{ mod.rbt_display }}</td></tr>{% endif %}
-    {% endfor %}
-</table>
+    <div class="doc-row bold">II. Teaching-Learning Process (General Instructions):</div>
+    <div class="doc-row" style="padding:6px 12px;">{{ syllabus.teaching_learning|linebreaksbr }}</div>
+</div>
 
-{% elif syllabus.content_type == 'theory_with_lab' %}
-<table>
-    <tr><td class="bold text-center" colspan="2"><strong>III.&nbsp; COURSE CONTENT</strong></td></tr>
-    <tr><td class="bold text-center" colspan="2">III(a). Theory PART</td></tr>
-    {% for mod in active_modules %}
-    <tr>
-        <td class="bold" style="width:80%;"><strong>Module-{{ mod.module_number }}: {{ mod.title }}</strong></td>
-        <td style="text-align:center;">Hrs {{ mod.teaching_hours }}</td>
-    </tr>
-    <tr><td colspan="2" style="padding:8px 12px;">{{ mod.content|linebreaksbr }}
-        {% if mod.tb_number %}<br><strong>Text Book {{ mod.tb_number }}:</strong> {{ mod.tb_chapter }}{% if mod.tb_section %}: {{ mod.tb_section }}{% endif %}{% endif %}
-        {% if mod.has_hands_on and mod.hands_on %}<br><strong>Hands-on:</strong> {{ mod.hands_on|linebreaksbr }}{% endif %}
-    </td></tr>
-    {% if mod.self_learning %}<tr><td colspan="2" style="padding:5px 12px;"><strong>Self-Learning:</strong> {{ mod.self_learning|linebreaksbr }}</td></tr>{% endif %}
-    {% if mod.prerequisites %}<tr><td colspan="2" style="padding:5px 12px;"><strong>Prerequisites:</strong> {{ mod.prerequisites|linebreaksbr }}</td></tr>{% endif %}
-    {% if mod.rbt_levels %}<tr><td colspan="2" style="padding:5px 12px;"><strong>RBT Levels:</strong> {{ mod.rbt_display }}</td></tr>{% endif %}
-    {% endfor %}
-</table>
-{% if main_exps %}
-<table style="margin-top:12px;">
-    <tr><td class="bold text-center" colspan="2">III(b). Practical PART</td></tr>
-    <tr><td class="bold text-center" style="width:15%;">Sl. No.</td><td class="bold text-center">Experiments / Programs / Problems</td></tr>
-    {% for exp in main_exps %}
-    <tr><td style="text-align:center;">{{ exp.sl_no }}</td><td>{{ exp.title }}</td></tr>
-    {% endfor %}
-</table>
-{% endif %}
+<!-- COURSE CONTENT -->
+<div class="doc-wrap">
+    <div class="section-heading">III.&nbsp; COURSE CONTENT</div>
 
-{% elif syllabus.content_type == 'lab_only' %}
-<table style="margin-top:12px;">
-    <tr><td class="bold text-center" colspan="2"><strong>III.&nbsp; COURSE CONTENT</strong></td></tr>
-    {% if syllabus.lab_prerequisites %}<tr><td class="bold" colspan="2">Prerequisites:</td></tr><tr><td colspan="2">{{ syllabus.lab_prerequisites|linebreaksbr }}</td></tr>{% endif %}
-    {% if syllabus.lab_self_learning %}<tr><td class="bold" colspan="2">Self-Learning:</td></tr><tr><td colspan="2">{{ syllabus.lab_self_learning|linebreaksbr }}</td></tr>{% endif %}
-    <tr><td class="bold text-center" style="width:15%;">Sl. No.</td><td class="bold text-center">Experiments / Programs / Problems</td></tr>
-    {% for exp in main_exps %}
-    <tr><td style="text-align:center;font-weight:bold;">{{ exp.sl_no }}</td><td>{{ exp.title }}</td></tr>
-    {% endfor %}
-</table>
-{% if add_exps %}
-<table style="margin-top:12px;">
-    <tr><td class="bold text-center" colspan="2">Additional Practice Programs</td></tr>
-    <tr><td class="bold text-center" style="width:15%;">Sl. No.</td><td class="bold text-center">Programs</td></tr>
-    {% for exp in add_exps %}
-    <tr><td style="text-align:center;font-weight:bold;">{{ exp.sl_no }}</td><td>{{ exp.title }}</td></tr>
-    {% endfor %}
-</table>
-{% endif %}
-{% endif %}
+    {% if syllabus.content_type == 'theory_only' %}
+        {% for mod in active_modules %}
+        <div class="mod-header">
+            <div class="mod-title">Module-{{ mod.module_number }}: {{ mod.title }}</div>
+            <div class="mod-hours">{{ mod.teaching_hours }} Hr{{ mod.teaching_hours|pluralize }}</div>
+        </div>
+        <div class="doc-row" style="padding:8px 12px;">
+            {{ mod.content|linebreaksbr }}
+            {% if mod.has_hands_on and mod.hands_on %}<br><br><strong>Hands-on:</strong><br>{{ mod.hands_on|linebreaksbr }}{% endif %}
+            {% if mod.tb_number %}<br><br><strong>Text Book {{ mod.tb_number }}:</strong> {{ mod.tb_chapter }}{% if mod.tb_section %}: {{ mod.tb_section }}{% endif %}{% endif %}
+        </div>
+        {% if mod.self_learning %}<div class="doc-row" style="padding:5px 12px;"><strong>Self-Learning:</strong> {{ mod.self_learning|linebreaksbr }}</div>{% endif %}
+        {% if mod.prerequisites %}<div class="doc-row" style="padding:5px 12px;"><strong>Prerequisites:</strong> {{ mod.prerequisites|linebreaksbr }}</div>{% endif %}
+        {% if mod.rbt_levels %}<div class="doc-row" style="padding:5px 12px;"><strong>RBT Levels:</strong> {{ mod.rbt_display }}</div>{% endif %}
+        {% endfor %}
 
-<!-- CO-PO Mapping -->
-<div style="font-weight:bold;text-transform:uppercase;margin-top:15px;">V. CO-PO-PSO Mapping (mark H=3; M=2; L=1)</div>
-<table>
-    <tr style="background:#f2f2f2;text-align:center;">
-        <th>PO/PSO</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>S1</th><th>S2</th><th>S3</th>
-    </tr>
-    {% for co in "12345" %}<tr style="text-align:center;"><th>CO{{ co }}</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
-</table>
+    {% elif syllabus.content_type == 'theory_with_lab' %}
+        <div class="subsection-heading">III(a). Theory PART</div>
+        {% for mod in active_modules %}
+        <div class="mod-header">
+            <div class="mod-title">Module-{{ mod.module_number }}: {{ mod.title }}</div>
+            <div class="mod-hours">{{ mod.teaching_hours }} Hr{{ mod.teaching_hours|pluralize }}</div>
+        </div>
+        <div class="doc-row" style="padding:8px 12px;">
+            {{ mod.content|linebreaksbr }}
+            {% if mod.has_hands_on and mod.hands_on %}<br><br><strong>Hands-on:</strong><br>{{ mod.hands_on|linebreaksbr }}{% endif %}
+            {% if mod.tb_number %}<br><br><strong>Text Book {{ mod.tb_number }}:</strong> {{ mod.tb_chapter }}{% if mod.tb_section %}: {{ mod.tb_section }}{% endif %}{% endif %}
+        </div>
+        {% if mod.self_learning %}<div class="doc-row" style="padding:5px 12px;"><strong>Self-Learning:</strong> {{ mod.self_learning|linebreaksbr }}</div>{% endif %}
+        {% if mod.prerequisites %}<div class="doc-row" style="padding:5px 12px;"><strong>Prerequisites:</strong> {{ mod.prerequisites|linebreaksbr }}</div>{% endif %}
+        {% if mod.rbt_levels %}<div class="doc-row" style="padding:5px 12px;"><strong>RBT Levels:</strong> {{ mod.rbt_display }}</div>{% endif %}
+        {% endfor %}
 
-<!-- Learning Resources -->
-<div style="font-weight:bold;text-transform:uppercase;margin-top:15px;">VII. Learning Resources</div>
-{% if syllabus.textbooks_json %}
-<table>
-    <tr><td colspan="5" class="bold">VII(a): Textbooks:</td></tr>
-    <tr style="background:#f2f2f2;text-align:center;">
-        <th style="width:8%;">Sl. No.</th><th>Title of the Book</th><th>Name of the author</th><th>Edition and Year</th><th>Name of the publisher</th>
-    </tr>
-    {% for tb in syllabus.textbooks_json %}
-    <tr style="text-align:center;">
-        <td>{{ forloop.counter|stringformat:"02d" }}</td>
-        <td>{{ tb.title }}</td><td>{{ tb.author }}</td><td>{{ tb.edition_year }}</td><td>{{ tb.publisher }}</td>
-    </tr>
+        {% if main_exps %}
+        <div class="subsection-heading" style="padding-top:10px;padding-bottom:10px;">III(b). Practical PART</div>
+        <table class="exps">
+            <tr>
+                <td class="bold text-center" style="width:15%;">Sl. No.</td>
+                <td class="bold text-center">Experiments / Programs / Problems</td>
+            </tr>
+            {% for exp in main_exps %}
+            <tr><td style="text-align:center;">{{ exp.sl_no }}</td><td>{{ exp.title }}</td></tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
+    {% elif syllabus.content_type == 'lab_only' %}
+        {% if syllabus.lab_prerequisites %}
+        <div class="doc-row bold">Prerequisites:</div>
+        <div class="doc-row">{{ syllabus.lab_prerequisites|linebreaksbr }}</div>
+        {% endif %}
+        {% if syllabus.lab_self_learning %}
+        <div class="doc-row bold">Self-Learning:</div>
+        <div class="doc-row">{{ syllabus.lab_self_learning|linebreaksbr }}</div>
+        {% endif %}
+        <table class="exps">
+            <tr>
+                <td class="bold text-center" style="width:15%;padding-top:10px;padding-bottom:10px;">Sl. No.</td>
+                <td class="bold text-center">Experiments / Programs / Problems</td>
+            </tr>
+            {% for exp in main_exps %}
+            <tr><td style="text-align:center;font-weight:bold;">{{ exp.sl_no }}</td><td>{{ exp.title }}</td></tr>
+            {% endfor %}
+        </table>
+
+        {% if add_exps %}
+        <div class="subsection-heading" style="padding-top:10px;padding-bottom:10px;">Additional Practice Programs</div>
+        <table class="exps">
+            <tr>
+                <td class="bold text-center" style="width:15%;">Sl. No.</td>
+                <td class="bold text-center">Programs</td>
+            </tr>
+            {% for exp in add_exps %}
+            <tr><td style="text-align:center;font-weight:bold;">{{ exp.sl_no }}</td><td>{{ exp.title }}</td></tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    {% endif %}
+</div>
+
+<!-- COURSE OUTCOMES -->
+<div class="doc-wrap">
+    <div class="section-heading">IV. COURSE OUTCOMES</div>
+    {% if syllabus.co_description %}
+    <div class="doc-row" style="padding-top:5px;padding-bottom:15px;">{{ syllabus.co_description|linebreaksbr }}</div>
+    {% endif %}
+    {% for co in syllabus.course_outcomes.all %}
+    <div class="co-row">
+        <div class="co-num">CO{{ co.sl_no }}</div>
+        <div class="co-desc">{{ co.description|linebreaksbr }}</div>
+    </div>
     {% endfor %}
+</div>
+
+<!-- CO-PO MAPPING -->
+<div class="doc-wrap">
+    <div class="section-heading">V. CO-PO-PSO Mapping (mark H=3; M=2; L=1)</div>
+    <div class="doc-row" style="padding:0;">
+        <table class="copo">
+            <tr style="background:#f2f2f2;">
+                <th style="width:8%;">PO/PSO</th>
+                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+                <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+                <th>S1</th><th>S2</th><th>S3</th>
+            </tr>
+            {% for row in copo_rows %}
+            <tr>
+                <th class="bold">{{ row.co_label }}</th>
+                {% for val in row.data %}<td>{{ val }}</td>{% endfor %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="16" style="text-align:center;">No Course Outcomes mapped.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<!-- ASSESSMENT -->
+<div class="doc-wrap">
+    <div class="section-heading" style="text-transform:none;">VI. Assessment Details (CIE &amp; SEE)</div>
+    <div class="doc-row" style="padding:6px 12px;"><span class="bold">General Rules:</span> {{ syllabus.assessment_general_rules|linebreaksbr }}</div>
+    <div class="doc-row" style="padding:6px 12px;"><span class="bold">Continuous Internal Evaluation (CIE):</span> {{ syllabus.assessment_cie|linebreaksbr }}</div>
+    <div class="doc-row" style="padding:6px 12px;"><span class="bold">Semester End Examination (SEE):</span> {{ syllabus.assessment_see|linebreaksbr }}</div>
+</div>
+
+<!-- LEARNING RESOURCES -->
+{% if syllabus.textbooks_json or syllabus.reference_books_json %}
+<div class="doc-wrap">
+    <div class="section-heading">VII. Learning Resources</div>
+
+    {% if syllabus.textbooks_json %}
+    <div class="doc-row bold" style="text-transform:uppercase;">VII(A): Textbooks:</div>
+    <div class="doc-row" style="padding:0;">
+        <table class="books">
+            <tr style="background:#f2f2f2;font-weight:bold;">
+                <th style="width:8%;">Sl. No.</th>
+                <th>Title of the Book</th>
+                <th>Name of the author</th>
+                <th>Edition and Year</th>
+                <th>Name of the publisher</th>
+            </tr>
+            {% for tb in syllabus.textbooks_json %}
+            <tr>
+                <td class="bold" style="text-align:center;">{{ forloop.counter }}</td>
+                <td>{{ tb.title }}</td><td>{{ tb.author }}</td><td>{{ tb.edition_year }}</td><td>{{ tb.publisher }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
     {% if syllabus.reference_books_json %}
-    <tr><td colspan="5" class="bold">VII(b): Reference Books:</td></tr>
-    {% for rb in syllabus.reference_books_json %}
-    <tr style="text-align:center;">
-        <td>{{ forloop.counter|stringformat:"02d" }}</td>
-        <td>{{ rb.title }}</td><td>{{ rb.author }}</td><td>{{ rb.edition_year }}</td><td>{{ rb.publisher }}</td>
-    </tr>
-    {% endfor %}
+    <div class="doc-row bold" style="text-transform:uppercase;">VII(B): Reference Books:</div>
+    <div class="doc-row" style="padding:0;">
+        <table class="books">
+            {% for rb in syllabus.reference_books_json %}
+            <tr>
+                {% with counter_offset=syllabus.textbooks_json|length %}
+                <td class="bold" style="text-align:center;width:8%;">{{ forloop.counter|add:counter_offset }}</td>
+                {% endwith %}
+                <td>{{ rb.title }}</td><td>{{ rb.author }}</td><td>{{ rb.edition_year }}</td><td>{{ rb.publisher }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
     {% endif %}
-</table>
+</div>
+{% endif %}
+
+<!-- WEB LINKS -->
+{% if syllabus.weblinks_custom or syllabus.weblinks_json %}
+<div class="doc-wrap">
+    <div class="doc-row bold">VII(c): Web links and Video Lectures (e-Resources):</div>
+    <div class="doc-row" style="padding:6px 12px;">
+        <div class="bold">WebLinks:</div>
+        {% if syllabus.weblinks_custom %}<div style="margin-bottom:5px;">{{ syllabus.weblinks_custom|linebreaksbr }}</div>{% endif %}
+        {% if syllabus.weblinks_json %}
+        <ol style="margin-top:5px;margin-bottom:0;padding-left:20px;">
+            {% for wl in syllabus.weblinks_json %}
+            <li><a href="{{ wl.url }}" style="color:blue;text-decoration:none;">{{ wl.name }}</a></li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ACTIVITY BASED LEARNING -->
+{% if syllabus.activity_based_learning %}
+<div class="doc-wrap">
+    <div class="doc-row bold text-center">VIII: Activity Based Learning / Practical Based Learning / Experiential learning:</div>
+    <div class="doc-row" style="padding:6px 12px 15px 12px;">{{ syllabus.activity_based_learning|linebreaksbr }}</div>
+</div>
 {% endif %}
 
 </body>

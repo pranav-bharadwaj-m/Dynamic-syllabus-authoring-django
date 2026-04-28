@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Syllabus Authoring Portal</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <style>
@@ -24,6 +25,12 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
 .lab-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;padding:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;}
 .lab-row .lab-sl{width:60px;}
 .lab-row textarea{flex:1;}
+.add-module-btn { 
+    display: block; width: 100%; border: 2px dashed #a5b4fc; background: #e0e7ff; 
+    color: #4f46e5; font-weight: bold; padding: 5px; border-radius: 8px; 
+    margin-bottom: 20px; transition: 0.2s; 
+}
+.add-module-btn:hover { background: #c7d2fe; border-color: #818cf8; }
 #undo-toast-container{position:fixed;bottom:30px;right:30px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
 .undo-toast{background:#1f2937;color:#fff;border-radius:10px;padding:14px 20px;min-width:280px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideIn .3s ease;}
 .undo-toast .toast-progress{height:3px;background:#4f46e5;border-radius:2px;margin-top:8px;animation:shrink linear forwards;}
@@ -38,18 +45,40 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
 </head>
 <body class="p-4">
 <div class="container">
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2>📝 Draft Syllabus</h2>
-  <span class="badge bg-warning text-dark fs-6">Status: Draft</span>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+  <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary fw-bold">⬅️ Back</a>
+      <h3 class="mb-0">📝 Edit Syllabus</h3>
+  </div>
+  <span class="badge bg-warning text-dark fs-6 w-100 w-md-auto text-center">Status: {{ syllabus.get_status_display|default:"Draft" }}</span>
 </div>
+
+{% if syllabus.status == 'REJECTED_BY_HOD' or syllabus.status == 'REJECTED_BY_ADMIN' %}
+<div class="alert alert-danger shadow-sm mb-4">
+    <h5 class="alert-heading fw-bold">❌ Syllabus Rejected</h5>
+    
+    {% if syllabus.status == 'REJECTED_BY_HOD' and syllabus.latest_remark %}
+        <p class="mb-0"><strong>Reason for rejection (HOD):</strong> {{ syllabus.latest_remark }}</p>
+    {% elif syllabus.status == 'REJECTED_BY_ADMIN' %}
+        <p class="mb-0"><strong>Status:</strong> Rejected by Admin.</p>
+    {% endif %}
+    
+    <hr>
+    <p class="mb-0 small">Please make the required changes below and re-submit for approval.</p>
+</div>
+{% endif %}
 
 <form method="POST" id="syllabus-form">
 {% csrf_token %}
-<!-- Hidden JSON for textbooks -->
+{% if syllabus.status == 'PENDING_HOD' or syllabus.status == 'PENDING_ADMIN' or syllabus.status == 'APPROVED' %}
+<div class="alert alert-warning fw-bold">
+    🔒 This syllabus is currently locked for review (Status: {{ syllabus.status }}). You cannot make changes.
+</div>
+<fieldset disabled>
+{% endif %}
 <input type="hidden" id="textbooks_json" name="textbooks_json" value="{{ syllabus.textbooks_json|default:'[]' }}">
 <input type="hidden" id="reference_books_json" name="reference_books_json" value="{{ syllabus.reference_books_json|default:'[]' }}">
 
-<!-- ── COURSE METADATA ── -->
 <div class="card mb-4 shadow-sm">
   <div class="card-header">📋 Course Metadata</div>
   <div class="card-body">
@@ -69,14 +98,20 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
         </div>
       </div>
       <div class="col-md-2"><label class="form-label">Total Hours</label>{{ form.total_hours }}</div>
+      
+      <div class="col-md-2" id="lab-slots-wrapper" style="display:none;">
+          <label class="form-label">Lab Slots</label>
+          {{ form.lab_slots }}
+      </div>
+      
       <div class="col-md-2"><label class="form-label">CIE Marks</label>{{ form.cie_marks }}</div>
     </div>
     <div class="row g-3 mb-3">
+      <div class="col-md-2"><label class="form-label">SEE Marks</label>{{ form.see_marks }}</div>
       <div class="col-md-2"><label class="form-label">Total Marks</label>{{ form.total_marks }}</div>
       <div class="col-md-2"><label class="form-label">Exam Hours</label>{{ form.exam_hours }}</div>
     </div>
     <hr>
-    <!-- Course Content Type -->
     <div class="mb-3">
       <label class="form-label fw-bold">📂 Course Content Type</label>
       <div class="d-flex gap-4 mt-1">
@@ -92,85 +127,94 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
   </div>
 </div>
 
-<!-- ── COURSE OBJECTIVES ── -->
 <div class="card mb-4 shadow-sm">
   <div class="card-header">I. Course Objectives</div>
   <div class="card-body">{{ form.objectives }}</div>
 </div>
 
-<!-- ── TEACHING-LEARNING ── -->
 <div class="card mb-4 shadow-sm">
   <div class="card-header">II. Teaching-Learning Process</div>
   <div class="card-body">{{ form.teaching_learning }}</div>
 </div>
 
-<!-- ── LAB DESCRIPTION (Lab Only) ── -->
 <div id="lab-desc-section" class="card mb-4 shadow-sm" style="display:none;">
   <div class="card-header">Lab Course Description</div>
   <div class="card-body">{{ form.lab_description }}</div>
 </div>
 
-<!-- ── COURSE CONTENT ── -->
 <div class="card mb-4 shadow-sm">
   <div class="card-header">III. Course Content</div>
   <div class="card-body">
 
-    <!-- Theory Modules (shown for theory_only and theory_with_lab) -->
     <div id="theory-section">
       <div id="theory-label" class="text-center fw-bold mb-3" style="display:none;">III(a). Theory PART</div>
       {{ formset.management_form }}
+      
       <div id="formset-container">
+        <button type="button" class="add-module-btn" onclick="insertModule(this)">+ Insert Module Here</button>
+
         {% for mf in formset %}
-        <div class="card module-card module-form" data-index="{{ forloop.counter0 }}">
-          <div class="card-body row g-2">
-            {{ mf.id }}
-            <div class="col-12 d-flex justify-content-between align-items-center mb-1">
-              <strong class="text-secondary">Module {{ forloop.counter }}</strong>
-              <button type="button" class="btn-icon red btn-delete-module" title="Delete" data-module-id="{{ mf.instance.pk|default:'' }}">
-                <i class="fa fa-trash"></i></button>
-              <div style="display:none;">{{ mf.DELETE }}</div>
-            </div>
-            <div class="col-md-9"><label class="form-label">Module No. &amp; Title</label>
-              <div class="d-flex gap-2">{{ mf.module_number }}{{ mf.title }}</div>
-            </div>
-            <div class="col-md-3"><label class="form-label">Teaching Hours</label>{{ mf.teaching_hours }}</div>
-            <div class="col-12"><label class="form-label">Description <span class="text-danger">*</span></label>{{ mf.content }}</div>
-            <!-- Hands-on toggle -->
-            <div class="col-12">
-              <div class="form-check">
-                {{ mf.has_hands_on }}
-                <label class="form-check-label ms-2" for="{{ mf.has_hands_on.id_for_label }}">Hands-on activities present?</label>
+        <div class="module-wrapper">
+          <div class="card module-card module-form" data-index="{{ forloop.counter0 }}">
+            <div class="card-body row g-2">
+              {{ mf.id }}
+              {{ mf.module_number }}
+              <div class="col-12 d-flex justify-content-between align-items-center mb-1">
+                <strong class="text-secondary module-title-display">Module {{ forloop.counter }}</strong>
+                <button type="button" class="btn-icon red btn-delete-module" title="Delete" data-module-id="{{ mf.instance.pk|default:'' }}">
+                  <i class="fa fa-trash"></i>
+                </button>
+                <div style="display:none;">{{ mf.DELETE }}</div>
               </div>
-            </div>
-            <div class="col-12 handson-area">
-              <label class="form-label">Hands-on Content</label>{{ mf.hands_on }}
-            </div>
-            <div class="col-md-2"><label class="form-label">TB Number</label>{{ mf.tb_number }}</div>
-            <div class="col-md-4"><label class="form-label">Chapter</label>{{ mf.tb_chapter }}</div>
-            <div class="col-md-6"><label class="form-label">Section</label>{{ mf.tb_section }}</div>
-            <div class="col-12"><label class="form-label">Self-Learning</label>{{ mf.self_learning }}</div>
-            <div class="col-12"><label class="form-label">Prerequisites</label>{{ mf.prerequisites }}</div>
-            <!-- RBT Levels -->
-            <div class="col-12">
-              <label class="form-label">RBT Levels</label>
-              {{ mf.rbt_levels }}
-              <div class="rbt-check-group" data-for="{{ mf.rbt_levels.html_name }}">
-                {% for code,lbl in rbt_choices %}
-                <label>
-                  <input type="checkbox" value="{{ code }}"
-                    {% if code in mf.instance.rbt_levels %}checked{% endif %}> {{ lbl }}
-                </label>
-                {% endfor %}
+              
+              <div class="col-md-9">
+                <label class="form-label">Module Title</label>
+                {{ mf.title }}
               </div>
+              <div class="col-md-3">
+                <label class="form-label">Teaching Hours</label>
+                {{ mf.teaching_hours }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description <span class="text-danger">*</span></label>
+                {{ mf.content }}
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  {{ mf.has_hands_on }}
+                  <label class="form-check-label ms-2" for="{{ mf.has_hands_on.id_for_label }}">Hands-on activities present?</label>
+                </div>
+              </div>
+              <div class="col-12 handson-area">
+                <label class="form-label">Hands-on Content</label>
+                {{ mf.hands_on }}
+              </div>
+              <div class="col-md-2"><label class="form-label">TB Number</label>{{ mf.tb_number }}</div>
+              <div class="col-md-4"><label class="form-label">Chapter</label>{{ mf.tb_chapter }}</div>
+              <div class="col-md-6"><label class="form-label">Section</label>{{ mf.tb_section }}</div>
+              <div class="col-12"><label class="form-label">Self-Learning</label>{{ mf.self_learning }}</div>
+              <div class="col-12"><label class="form-label">Prerequisites</label>{{ mf.prerequisites }}</div>
+              
+              <div class="col-12">
+                <label class="form-label">RBT Levels</label>
+                {{ mf.rbt_levels }}
+                <div class="rbt-check-group" data-for="{{ mf.rbt_levels.html_name }}">
+                  {% for code,lbl in rbt_choices %}
+                  <label>
+                    <input type="checkbox" value="{{ code }}" {% if code in mf.instance.rbt_levels %}checked{% endif %}> {{ lbl }}
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+
             </div>
           </div>
+          <button type="button" class="add-module-btn" onclick="insertModule(this)">+ Insert Module Here</button>
         </div>
         {% endfor %}
       </div>
-      <button type="button" id="add-module" class="btn btn-outline-primary fw-bold mb-3">+ Add Module</button>
     </div>
 
-    <!-- Practical Part (theory_with_lab only) -->
     <div id="practical-section" style="display:none;">
       <div class="text-center fw-bold my-3">III(b). Practical PART</div>
       {{ main_lab_fs.management_form }}
@@ -192,7 +236,6 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
       <button type="button" class="btn btn-sm btn-outline-success" onclick="addLabRow('lab-body-main','labmain')"><i class="fa fa-plus"></i> Add Experiment</button>
     </div>
 
-    <!-- Lab Only section -->
     <div id="lab-only-section" style="display:none;">
       <div class="row g-3 mb-3">
         <div class="col-12"><label class="form-label">Prerequisites</label>{{ form.lab_prerequisites }}</div>
@@ -229,182 +272,537 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif;}
   </div>
 </div>
 
-<!-- ── TEXTBOOKS ── -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">IV. Course Outcomes</div>
+  <div class="card-body">
+    <label class="form-label text-muted">Description (Displayed below heading)</label>
+    {{ form.co_description }}
+    <hr>
+    {{ co_fs.management_form }}
+    <div id="co-container">
+      {% for co in co_fs %}
+        <div class="co-row d-flex gap-2 align-items-start mb-2">
+            {{ co.id }}
+            {{ co.sl_no }}
+            <div class="fw-bold mt-2 text-center" style="width:45px;">CO<span class="co-num">{{ forloop.counter }}</span></div>
+            <div class="flex-grow-1">{{ co.description }}</div>
+            <button type="button" class="btn-icon red mt-1 btn-del-co"><i class="fa fa-trash"></i></button>
+            <div style="display:none;">{{ co.DELETE }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="addCORow()"><i class="fa fa-plus"></i> Add Course Outcome</button>
+  </div>
+</div>
+
 <div class="card mb-4 shadow-sm">
   <div class="card-header">VII. Learning Resources</div>
   <div class="card-body">
     <div class="section-badge mb-2">VII(a): Textbooks</div>
     <div id="tb-container"></div>
-    <button type="button" class="btn btn-sm btn-outline-success mb-4" id="add-tb"><i class="fa fa-plus"></i> Add Textbook</button>
+    <div class="mb-4"> <button type="button" class="btn btn-sm btn-outline-success" id="add-tb"><i class="fa fa-plus"></i> Add Textbook</button></div>
 
     <div class="section-badge mb-2">VII(b): Reference Books</div>
     <div id="ref-container"></div>
-    <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-ref"><i class="fa fa-plus"></i> Add Reference Book</button>
+    <div class="mb-3"> <button type="button" class="btn btn-sm btn-outline-success" id="add-ref"><i class="fa fa-plus"></i> Add Reference Book</button></div>
 
-    <div class="mt-3"><label class="form-label">CO-PO Matrix (JSON)</label>{{ form.copo_matrix }}</div>
+    <div class="mt-5">
+      <h6 class="fw-bold">V. CO-PO-PSO Mapping</h6>
+      <p class="text-muted small mb-2">Hover over any column header to read the PO/PSO description. Enter only 1, 2, or 3.</p>
+      {{ form.copo_matrix }} <div class="table-responsive">
+        <table class="table table-bordered table-sm mb-0" id="copo-table">
+          <thead class="table-light text-center align-middle" style="font-size: 0.8rem;">
+             <tr>
+                 <th rowspan="2" style="width:60px;">CO \ PO</th>
+                 <th colspan="12">Program Outcomes (POs)</th>
+                 <th colspan="3">PSOs</th>
+             </tr>
+             <tr id="copo-headers">
+                 </tr>
+          </thead>
+          <tbody id="copo-tbody">
+              </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Submit -->
-<div class="d-grid gap-2 d-md-flex justify-content-md-end mb-5">
-  <button type="submit" class="btn btn-success btn-lg px-5">💾 Save Draft</button>
-  <a href="/pdf/1/" target="_blank" class="btn btn-outline-primary btn-lg px-4">📄 Open PDF</a>
-</div>
-</form>
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">VI. Assessment Details (CIE & SEE)</div>
+  <div class="card-body">
+    <div class="mb-3">
+        <label class="form-label">General Rules</label>
+        {{ form.assessment_general_rules }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Continuous Internal Evaluation (CIE)</label>
+        {{ form.assessment_cie }}
+    </div>
+    <div>
+        <label class="form-label">Semester End Examination (SEE)</label>
+        {{ form.assessment_see }}
+    </div>
+  </div>
 </div>
 
+<div class="card mb-4 shadow-sm">
+  <div class="card-header">VII(c). Web Links & VIII. Activity Based Learning</div>
+  <div class="card-body">
+    <div class="mb-4">
+        <label class="form-label fw-bold">VII(c): Web links and Video Lectures (Custom Entry)</label>
+        {{ form.weblinks_custom }}
+    </div>
+    
+    <label class="form-label fw-bold">Web Links List</label>
+    <div id="wl-container"></div>
+    <div class="mb-4">
+        <button type="button" class="btn btn-sm btn-outline-success" id="add-wl"><i class="fa fa-plus"></i> Add Web Link</button>
+        {{ form.weblinks_json }}
+    </div>
+    
+    <hr>
+    
+    <div class="mt-3">
+        <label class="form-label fw-bold ">VIII: Activity Based Learning / Practical Based Learning / Experiential Learning</label>
+        {{ form.activity_based_learning }}
+    </div>
+  </div>
+</div>
+
+<div class="d-grid gap-2 d-md-flex justify-content-md-end mb-5">
+  <button type="submit" name="clear_form" class="btn btn-danger px-4" onclick="return confirm('Are you sure you want to clear the entire syllabus? This cannot be undone.');">🗑️ Clear Form</button>
+  <button type="submit" name="save_draft" class="btn btn-secondary px-4">💾 Save Draft</button>
+  <button type="submit" name="send_approval" class="btn btn-success px-5">✅ Send for Approval</button>
+</div>
+
+{% if syllabus.status != 'DRAFT' and syllabus.status != 'REJECTED' %}
+</fieldset>
+{% endif %}
+</form>
 <div id="undo-toast-container"></div>
 
 <script>
-const CSRF = '{{ csrf_token }}';
-const RBT_LABELS = {L1:'Remembering',L2:'Understanding',L3:'Applying',L4:'Analyzing',L5:'Evaluating',L6:'Creating'};
+    const CSRF = '{{ csrf_token }}';
+    const RBT_LABELS = {L1:'Remembering',L2:'Understanding',L3:'Applying',L4:'Analyzing',L5:'Evaluating',L6:'Creating'};
+    
+    // ── Content Type toggle ───────────────────────────────────────────────────
+    function applyContentType(val){
+      $('#theory-section').toggle(val==='theory_only'||val==='theory_with_lab');
+      $('#theory-label').toggle(val==='theory_with_lab');
+      $('#practical-section').toggle(val==='theory_with_lab');
+      $('#lab-only-section').toggle(val==='lab_only');
+      $('#lab-desc-section').toggle(val==='lab_only');
+      $('#lab-slots-wrapper').toggle(val==='theory_with_lab');
+    }
+    $('input[name="content_type"]').change(function(){ applyContentType(this.value); });
+    applyContentType($('input[name="content_type"]:checked').val()||'theory_only');
+    
+    // ── RBT checkboxes → hidden JSON ─────────────────────────────────────────
+    $(document).on('change','.rbt-check-group input[type=checkbox]',function(){
+      const grp=$(this).closest('.rbt-check-group');
+      const name=grp.data('for');
+      const vals=grp.find('input:checked').map((_,el)=>el.value).get();
+      $('input[name="'+name+'"],textarea[name="'+name+'"]').val(JSON.stringify(vals));
+    });
+    
+    // ── Hands-on toggle ───────────────────────────────────────────────────────
+    $(document).on('change','.handson-toggle',function(){
+      $(this).closest('.card-body').find('.handson-area').toggle(this.checked);
+    });
+    $('.handson-toggle').each(function(){ $(this).closest('.card-body').find('.handson-area').toggle(this.checked); });
+    
+    // ── Auto-Sequencing Modules Logic ─────────────────────────────────────────
+    function reindexModules() {
+        let currentModuleNum = 1;
+        $('.module-form:visible').each(function() {
+            $(this).find('.module-title-display').text('Module ' + currentModuleNum);
+            $(this).find('.module-number-input').val(currentModuleNum);
+            currentModuleNum++;
+        });
+    }
+    
+    function insertModule(btnElement) {
+      const idx = parseInt($('#id_modules-TOTAL_FORMS').val());
+      // Use standard clone() without 'true' so we don't carry over ghost event listeners
+      const wrapperTemplate = $('.module-wrapper:first').clone(); 
+      const nf = wrapperTemplate.find('.module-form');
+      
+      // 1. Update all inputs, textareas, and selects
+      wrapperTemplate.find('input,textarea,select').each(function(){
+          const n = $(this).attr('name'); if(!n) return;
+          const nn = n.replace(/-\d+-/, '-' + idx + '-');
+          $(this).attr({name:nn, id:'id_'+nn}).val('').prop('checked',false);
+      });
+      
+      // 2. FIX: Update label 'for' attributes so clicking the text checks the RIGHT box
+      wrapperTemplate.find('label').each(function() {
+          const f = $(this).attr('for');
+          if (f) {
+              $(this).attr('for', f.replace(/-\d+-/, '-' + idx + '-'));
+          }
+      });
+      
+      // 3. FIX: Update RBT 'data-for' attributes so checking RBTs saves to the RIGHT hidden input
+      wrapperTemplate.find('.rbt-check-group').each(function() {
+          const dFor = $(this).attr('data-for');
+          if (dFor) {
+              $(this).attr('data-for', dFor.replace(/-\d+-/, '-' + idx + '-'));
+          }
+      });
 
-// ── Content Type toggle ───────────────────────────────────────────────────
-function applyContentType(val){
-  $('#theory-section').toggle(val==='theory_only'||val==='theory_with_lab');
-  $('#theory-label').toggle(val==='theory_with_lab');
-  $('#practical-section').toggle(val==='theory_with_lab');
-  $('#lab-only-section').toggle(val==='lab_only');
-  $('#lab-desc-section').toggle(val==='lab_only');
-}
-$('input[name="content_type"]').change(function(){ applyContentType(this.value); });
-applyContentType($('input[name="content_type"]:checked').val()||'theory_only');
+      nf.find('.rbt-check-group input[type=checkbox]').prop('checked',false);
+      nf.find('.btn-delete-module').attr('data-module-id','');
+      nf.attr('data-index', idx);
+      nf.find('.handson-area').hide();
+      
+      // 4. FIX: Correct DOM Insertion so wrappers don't get nested inside each other
+      const parentWrapper = $(btnElement).closest('.module-wrapper');
+      if (parentWrapper.length) {
+          parentWrapper.after(wrapperTemplate); // Insert cleanly AFTER the current module
+      } else {
+          $(btnElement).after(wrapperTemplate); // Fallback for the very top "+ Insert" button
+      }
+      
+      $('#id_modules-TOTAL_FORMS').val(idx + 1);
+      
+      reindexModules();
+    }
+    
+    $(document).on('click','.btn-delete-module',function(){
+        const $wrapper = $(this).closest('.module-wrapper');
+        const mid = $(this).attr('data-module-id');
+        
+        if(!mid){ 
+            $wrapper.remove(); 
+            reindexModules(); 
+            return; 
+        }
+        
+        $.post('/module/delete/'+mid+'/',{csrfmiddlewaretoken:CSRF},res=>{
+            if(!res.ok) return;
+            $wrapper.hide(); 
+            $(this).siblings('div').find('input[type="checkbox"]').prop('checked', true);
+            reindexModules();
+        });
+    });
+    
+    // ── Lab Experiment rows ───────────────────────────────────────────────────
+    function addLabRow(bodyId, prefix){
+      const tbody=$('#'+bodyId);
+      const idx=tbody.find('tr:visible').length;
+      const total=parseInt($('#id_'+prefix+'-TOTAL_FORMS').val()||0);
+      const row=$(`<tr class="lab-form-row">
+        <input type="hidden" name="${prefix}-${total}-id" value="">
+        <input type="hidden" name="${prefix}-${total}-is_additional" value="False">
+        <td><input type="number" name="${prefix}-${total}-sl_no" value="${idx+1}" class="form-control text-center" style="width:70px;" min="1"></td>
+        <td><textarea name="${prefix}-${total}-title" class="form-control" rows="2" placeholder="Experiment title"></textarea></td>
+        <td><button type="button" class="btn-icon red btn-del-lab" data-body="${bodyId}"><i class="fa fa-trash"></i></button></td>
+      </tr>`);
+      tbody.append(row);
+      $('#id_'+prefix+'-TOTAL_FORMS').val(total+1);
+    }
+    $(document).on('click','.btn-del-lab',function(){
+      const row=$(this).closest('tr');
+      row.find('input[name$="-DELETE"]').val('on');
+      row.hide();
+      renumberLab($(this).data('body'));
+    });
+    function renumberLab(bodyId){
+      $('#'+bodyId+' tr:visible').each((i,tr)=>{
+        $(tr).find('input[type=number]').first().val(i+1);
+      });
+    }
+    
+    // ── COURSE OUTCOMES & CO-PO MATRIX LOGIC ─────────────────────────────────
+    const PO_COLS = ['1','2','3','4','5','6','7','8','9','10','11','12','S1','S2','S3'];
+    const PO_DEFS = {
+        '1': 'PO1: Engineering knowledge: Apply the knowledge of mathematics, science, engineering fundamentals, and an engineering specialization to the solution of complex engineering problems.',
+        '2': 'PO2: Problem analysis: Identify, formulate, review research literature, and analyze complex engineering problems...',
+        '3': 'PO3: Design/development of solutions: Design solutions for complex engineering problems and design system components...',
+        '4': 'PO4: Conduct investigations of complex problems: Use research-based knowledge and research methods...',
+        '5': 'PO5: Modern tool usage: Create, select, and apply appropriate techniques, resources, and modern IT tools...',
+        '6': 'PO6: The engineer and society: Apply reasoning informed by contextual knowledge to assess societal issues...',
+        '7': 'PO7: Environment and sustainability: Understand the impact of engineering solutions in societal contexts...',
+        '8': 'PO8: Ethics: Apply ethical principles and commit to professional ethics and responsibilities...',
+        '9': 'PO9: Individual and team work: Function effectively as an individual, and as a member or leader in diverse teams.',
+        '10':'PO10: Communication: Communicate effectively on complex engineering activities with the engineering community...',
+        '11':'PO11: Project management and finance: Demonstrate knowledge and understanding of engineering and management principles...',
+        '12':'PO12: Life-long learning: Recognize the need for, and have the preparation and ability to engage in independent and life-long learning.',
+        'S1':'PSO1: The ability to understand, analyze and develop computer applications in Web Technology, ML, Data Science, IoT...',
+        'S2':'PSO2: Ability to apply computing techniques using open-ended environments and adopt software engineering practices.',
+        'S3':'PSO3: Inculcate skills for a successful career based on sound principles of software project management and ethical practices.'
+    };
 
-// ── RBT checkboxes → hidden JSON ─────────────────────────────────────────
-$(document).on('change','.rbt-check-group input[type=checkbox]',function(){
-  const grp=$(this).closest('.rbt-check-group');
-  const name=grp.data('for');
-  const vals=grp.find('input:checked').map((_,el)=>el.value).get();
-  $('input[name="'+name+'"],textarea[name="'+name+'"]').val(JSON.stringify(vals));
-});
+    let isFirstLoad = true;
+    let initialCopo = JSON.parse('{{ copo_matrix_json|escapejs }}' || '{}');
 
-// ── Hands-on toggle ───────────────────────────────────────────────────────
-$(document).on('change','.handson-toggle',function(){
-  $(this).closest('.card-body').find('.handson-area').toggle(this.checked);
-});
-// Init on load
-$('.handson-toggle').each(function(){ $(this).closest('.card-body').find('.handson-area').toggle(this.checked); });
+    // Build the Hover Headers safely
+    if ($('#copo-headers').children().length === 0) {
+        PO_COLS.forEach(col => {
+            $('#copo-headers').append(`<th data-bs-toggle="tooltip" data-bs-placement="top" title="${PO_DEFS[col]}" style="cursor:help; min-width:35px;">${col}</th>`);
+        });
+    }
 
-// ── Add Module ────────────────────────────────────────────────────────────
-$('#add-module').click(function(){
-  const idx=parseInt($('#id_modules-TOTAL_FORMS').val());
-  const nf=$('.module-form:first').clone(true);
-  nf.find('input,textarea,select').each(function(){
-    const n=$(this).attr('name'); if(!n)return;
-    const nn=n.replace(/-\d+-/,'-'+idx+'-');
-    $(this).attr({name:nn,id:'id_'+nn}).val('').prop('checked',false);
-  });
-  nf.find('.rbt-check-group input[type=checkbox]').prop('checked',false);
-  nf.find('.btn-delete-module').attr('data-module-id','');
-  nf.find('strong').text('Module '+(idx+1));
-  nf.attr('data-index',idx);
-  nf.find('.handson-area').hide();
-  $('#formset-container').append(nf);
-  $('#id_modules-TOTAL_FORMS').val(idx+1);
-});
+    function addCORow() {
+        const prefix = 'co';
+        const container = $('#co-container');
+        const idx = container.children('.co-row:visible').length;
+        const total = parseInt($('#id_'+prefix+'-TOTAL_FORMS').val()||0);
+        
+        const row = $(`<div class="co-row d-flex gap-2 align-items-start mb-2">
+            <input type="hidden" name="${prefix}-${total}-id" value="">
+            <input type="hidden" name="${prefix}-${total}-sl_no" class="co-sl-no" value="${idx+1}">
+            <div class="fw-bold mt-2 text-center" style="width:45px;">CO<span class="co-num">${idx+1}</span></div>
+            <div class="flex-grow-1"><textarea name="${prefix}-${total}-description" class="form-control" rows="2" placeholder="Apply the fundamentals of..."></textarea></div>
+            <button type="button" class="btn-icon red mt-1 btn-del-co"><i class="fa fa-trash"></i></button>
+            <div style="display:none;"><input type="checkbox" name="${prefix}-${total}-DELETE"></div>
+        </div>`);
+        
+        container.append(row);
+        $('#id_'+prefix+'-TOTAL_FORMS').val(total+1);
+        
+        renumberCOs(); // Immediately rebuild matrix
+    }
 
-// ── Delete Module (AJAX) ─────────────────────────────────────────────────
-$(document).on('click','.btn-delete-module',function(){
-  const $card=$(this).closest('.module-card');
-  const mid=$(this).attr('data-module-id');
-  if(!mid){ $card.addClass('deleting'); setTimeout(()=>$card.remove(),400); return; }
-  $.post('/module/delete/'+mid+'/',{csrfmiddlewaretoken:CSRF},res=>{
-    if(!res.ok)return;
-    $card.addClass('deleting');
-    showUndoToast(mid,$card,()=>$.post('/module/permanent-delete/'+mid+'/',{csrfmiddlewaretoken:CSRF}),
-      ()=>$.post('/module/restore/'+mid+'/',{csrfmiddlewaretoken:CSRF},r=>{if(r.ok)$card.removeClass('deleting');}));
-  });
-});
-function showUndoToast(id,$card,onExp,onUndo){
-  const D=5000;
-  const $t=$(`<div class="undo-toast"><div style="flex:1"><div>🗑️ Module deleted</div><div class="toast-progress" style="animation-duration:${D}ms"></div></div><button class="btn-undo">Undo</button></div>`);
-  $('#undo-toast-container').append($t);
-  const t=setTimeout(()=>{$t.remove();onExp();},D);
-  $t.find('.btn-undo').click(()=>{clearTimeout(t);$t.remove();onUndo();});
-}
+    // BULLETPROOF DELETE HANDLER
+    $(document).off('click', '.btn-del-co').on('click', '.btn-del-co', function(e){
+        e.preventDefault();
+        const row = $(this).closest('.co-row');
+        
+        // Remove from matrix first so we don't snapshot a dead row
+        const indexToDelete = $('#co-container .co-row:visible').index(row);
+        if (indexToDelete !== -1) {
+            $('#copo-tbody tr').eq(indexToDelete).remove();
+        }
+        
+        // Check the hidden Django delete box
+        row.find('input[type="checkbox"]').prop('checked', true);
+        
+        // Hide the Course Outcome row
+        row.removeClass('d-flex').hide();
+        
+        // Rebuild the sequence
+        renumberCOs();
+    });
 
-// ── Lab Experiment rows ───────────────────────────────────────────────────
-function addLabRow(bodyId, prefix){
-  const tbody=$('#'+bodyId);
-  const idx=tbody.find('tr').length;
-  const total=parseInt($('#id_'+prefix+'-TOTAL_FORMS').val()||0);
-  const row=$(`<tr class="lab-form-row">
-    <input type="hidden" name="${prefix}-${total}-id" value="">
-    <input type="hidden" name="${prefix}-${total}-is_additional" value="False">
-    <td><input type="number" name="${prefix}-${total}-sl_no" value="${idx+1}" class="form-control text-center" style="width:70px;" min="1"></td>
-    <td><textarea name="${prefix}-${total}-title" class="form-control" rows="2" placeholder="Experiment title"></textarea></td>
-    <td><button type="button" class="btn-icon red btn-del-lab" data-body="${bodyId}"><i class="fa fa-trash"></i></button></td>
-  </tr>`);
-  tbody.append(row);
-  $('#id_'+prefix+'-TOTAL_FORMS').val(total+1);
-}
-$(document).on('click','.btn-del-lab',function(){
-  const row=$(this).closest('tr');
-  row.find('input[name$="-DELETE"]').val('on');
-  row.hide();
-  renumberLab($(this).data('body'));
-});
-function renumberLab(bodyId){
-  $('#'+bodyId+' tr:visible').each((i,tr)=>{
-    $(tr).find('input[type=number]').first().val(i+1);
-  });
-}
+    function renumberCOs() {
+        let currentMatrix = {};
+        if (isFirstLoad) {
+            currentMatrix = initialCopo;
+            isFirstLoad = false;
+        } else {
+            $('#copo-tbody tr').each(function(i) {
+                let rowVals = {};
+                $(this).find('input').each(function() {
+                    rowVals[$(this).data('col')] = $(this).val();
+                });
+                currentMatrix[i+1] = rowVals; 
+            });
+        }
 
-// ── Textbooks ─────────────────────────────────────────────────────────────
-function tbRow(data, idx, container, jsonId){
-  const d=data||{};
-  const canDel = idx > 0;
-  const row=$(`<div class="tb-row" data-idx="${idx}">
-    <span class="sl">${String(idx+1).padStart(2,'0')}</span>
-    <input class="form-control" placeholder="Title of the book" value="${(d.title||'').replace(/"/g,'&quot;')}">
-    <input class="form-control" placeholder="Name of the author" value="${(d.author||'').replace(/"/g,'&quot;')}">
-    <input class="form-control" placeholder="Edition and Year" value="${(d.edition_year||'').replace(/"/g,'&quot;')}">
-    <input class="form-control" placeholder="Name of the publisher" value="${(d.publisher||'').replace(/"/g,'&quot;')}">
-    ${canDel?'<button type="button" class="btn-icon red btn-del-tb"><i class="fa fa-trash"></i></button>':'<span style="width:34px;"></span>'}
-  </div>`);
-  row.on('input','input',()=>serializeTb(container,jsonId));
-  if(canDel) row.find('.btn-del-tb').click(function(){$(this).closest('.tb-row').remove();reindexTb(container,jsonId);});
-  return row;
-}
-function reindexTb(cont,jsonId){
-  $(cont+' .tb-row').each((i,r)=>{
-    $(r).find('.sl').text(String(i+1).padStart(2,'0'));
-    $(r).attr('data-idx',i);
-    // First row has no delete btn - update based on new index
-    if(i===0) $(r).find('.btn-del-tb').remove();
-  });
-  serializeTb(cont,jsonId);
-}
-function serializeTb(cont,jsonId){
-  const arr=[];
-  $(cont+' .tb-row').each((_,r)=>{
-    const ins=$(r).find('input');
-    arr.push({title:ins.eq(0).val(),author:ins.eq(1).val(),edition_year:ins.eq(2).val(),publisher:ins.eq(3).val()});
-  });
-  $(jsonId).val(JSON.stringify(arr));
-}
-function loadTbArr(arr, cont, jsonId){
-  // Always show at least one empty row
-  const data = (arr && arr.length) ? arr : [{}];
-  data.forEach((d,i)=>$(cont).append(tbRow(d,i,cont,jsonId)));
-  serializeTb(cont,jsonId);
-}
+        let coCount = 0;
+        $('#co-container .co-row:visible').each(function(i) {
+            $(this).find('.co-sl-no').val(i + 1);
+            $(this).find('.co-num').text(i + 1);
+            coCount++;
+        });
 
-$(function(){
-  // Use server-rendered JSON directly (avoids Python repr vs JSON mismatch)
-  loadTbArr({{ textbooks_json_str|safe }}, '#tb-container', '#textbooks_json');
-  loadTbArr({{ reference_books_json_str|safe }}, '#ref-container', '#reference_books_json');
-  $('#add-tb').click(()=>{
-    const n=$('#tb-container .tb-row').length;
-    $('#tb-container').append(tbRow(null,n,'#tb-container','#textbooks_json'));
-    serializeTb('#tb-container','#textbooks_json');
-  });
-  $('#add-ref').click(()=>{
-    const n=$('#ref-container .tb-row').length;
-    $('#ref-container').append(tbRow(null,n,'#ref-container','#reference_books_json'));
-    serializeTb('#ref-container','#reference_books_json');
-  });
-});
+        let tbody = $('#copo-tbody');
+        tbody.empty();
+        for(let i=1; i<=coCount; i++) {
+            let tr = $('<tr>').append(`<th class="align-middle text-center" style="font-size:0.85rem;">CO${i}</th>`);
+            PO_COLS.forEach(col => {
+                let val = (currentMatrix[i] && currentMatrix[i][col]) ? currentMatrix[i][col] : '';
+                tr.append(`<td class="p-0"><input type="text" class="form-control border-0 text-center rounded-0 copo-input" data-co="${i}" data-col="${col}" value="${val}" maxlength="1" style="box-shadow:none; font-size:0.85rem;"></td>`);
+            });
+            tbody.append(tr);
+        }
+        
+        // SAFELY initialize tooltips without crashing Bootstrap
+        let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) { 
+            return bootstrap.Tooltip.getInstance(tooltipTriggerEl) || new bootstrap.Tooltip(tooltipTriggerEl); 
+        });
+        
+        serializeCopo();
+    }
+
+    $(document).on('input', '.copo-input', function(){
+        let val = $(this).val();
+        if (!['1','2','3'].includes(val)) { $(this).val(''); }
+        serializeCopo();
+    });
+
+    function serializeCopo() {
+        let matrix = {};
+        $('#copo-tbody tr').each(function() {
+            let co = $(this).find('input').first().data('co');
+            if (co) {
+                matrix[co] = {};
+                $(this).find('input').each(function() {
+                    if($(this).val()) { matrix[co][$(this).data('col')] = $(this).val(); }
+                });
+            }
+        });
+        $('#hidden_copo_matrix').val(JSON.stringify(matrix));
+    }
+
+    // --- CO-PO VALIDATION ---
+    $('button[name="send_approval"]').click(function(e) {
+        let emptyRowFound = false;
+        $('#copo-tbody tr').each(function() {
+            let hasValue = false;
+            $(this).find('input').each(function() {
+                if ($(this).val().trim() !== '') { hasValue = true; }
+            });
+            if (!hasValue) { emptyRowFound = true; }
+        });
+        
+        if (emptyRowFound) {
+            if (!confirm("⚠️ WARNING: One or more Course Outcomes have NO mapping in the CO-PO matrix. Are you sure you want to send this for approval anyway?")) {
+                e.preventDefault(); // Stop submission
+            }
+        }
+    });
+
+    $(function() {
+        renumberCOs();
+    });
+// ─────────────────────────────────────────────────────────────────────────
+
+    // ── Textbooks ─────────────────────────────────────────────────────────────
+    function tbRow(data, idx, container, jsonId){
+      const d=data||{};
+      // The trash button is always rendered now
+      const row=$(`<div class="tb-row" data-idx="${idx}">
+        <span class="sl">${idx+1}</span>
+        <input class="form-control" placeholder="Title of the book" value="${(d.title||'').replace(/"/g,'&quot;')}">
+        <input class="form-control" placeholder="Name of the author" value="${(d.author||'').replace(/"/g,'&quot;')}">
+        <input class="form-control" placeholder="Edition and Year" value="${(d.edition_year||'').replace(/"/g,'&quot;')}">
+        <input class="form-control" placeholder="Name of the publisher" value="${(d.publisher||'').replace(/"/g,'&quot;')}">
+        <button type="button" class="btn-icon red btn-del-tb"><i class="fa fa-trash"></i></button>
+      </div>`);
+      
+      row.on('input','input',()=>serializeTb(container,jsonId));
+      
+      row.find('.btn-del-tb').click(function(){
+        // If it's the very last book left on screen, just clear inputs
+        if ($(container + ' .tb-row').length === 1) {
+            row.find('input').val('');
+            serializeTb(container, jsonId);
+        } else {
+            // Otherwise, completely remove it and re-number
+            row.remove();
+            reindexTb(container, jsonId);
+        }
+      });
+      return row;
+    }
+
+    function reindexTb(cont,jsonId){
+      $(cont+' .tb-row').each((i,r)=>{
+        $(r).find('.sl').text(idx+1);
+        $(r).attr('data-idx',i);
+      });
+      serializeTb(cont,jsonId);
+    }
+
+    function serializeTb(cont,jsonId){
+      const arr=[];
+      $(cont+' .tb-row').each((_,r)=>{
+        const ins=$(r).find('input');
+        // Only save it if they actually typed a title
+        if (ins.eq(0).val().trim() !== '') {
+            arr.push({title:ins.eq(0).val(),author:ins.eq(1).val(),edition_year:ins.eq(2).val(),publisher:ins.eq(3).val()});
+        }
+      });
+      $(jsonId).val(JSON.stringify(arr));
+    }
+
+    function loadTbArr(arr, cont, jsonId){
+      const data = (arr && arr.length) ? arr : [{}];
+      data.forEach((d,i)=>$(cont).append(tbRow(d,i,cont,jsonId)));
+      serializeTb(cont,jsonId);
+    }
+
+    // ── Web Links ─────────────────────────────────────────────────────────────
+    function wlRow(data, idx, container, jsonId){
+      const d=data||{};
+      const row=$(`<div class="tb-row wl-row" data-idx="${idx}">
+        <span class="sl">${idx+1}</span>
+        <input class="form-control" placeholder="Link Name (e.g. MVT architecture)" value="${(d.name||'').replace(/"/g,'&quot;')}">
+        <input class="form-control" placeholder="URL (e.g. https://...)" value="${(d.url||'').replace(/"/g,'&quot;')}">
+        <button type="button" class="btn-icon red btn-del-wl"><i class="fa fa-trash"></i></button>
+      </div>`);
+      
+      row.on('input','input',()=>serializeWl(container,jsonId));
+      
+      row.find('.btn-del-wl').click(function(){
+        if ($(container + ' .wl-row').length === 1) {
+            row.find('input').val('');
+            serializeWl(container, jsonId);
+        } else {
+            row.remove();
+            reindexWl(container, jsonId);
+        }
+      });
+      return row;
+    }
+
+    function reindexWl(cont,jsonId){
+      $(cont+' .wl-row').each((i,r)=>{
+        $(r).find('.sl').text(i+1);
+        $(r).attr('data-idx',i);
+      });
+      serializeWl(cont,jsonId);
+    }
+
+    function serializeWl(cont,jsonId){
+      const arr=[];
+      $(cont+' .wl-row').each((_,r)=>{
+        const ins=$(r).find('input');
+        if (ins.eq(0).val().trim() !== '' || ins.eq(1).val().trim() !== '') {
+            arr.push({name:ins.eq(0).val(),url:ins.eq(1).val()});
+        }
+      });
+      $(jsonId).val(JSON.stringify(arr));
+    }
+
+    function loadWlArr(arr, cont, jsonId){
+      const data = (arr && arr.length) ? arr : [{}];
+      data.forEach((d,i)=>$(cont).append(wlRow(d,i,cont,jsonId)));
+      serializeWl(cont,jsonId);
+    }
+
+    // Inside your existing $(function(){ ... }) block at the bottom, ADD THIS:
+    const wlData = JSON.parse('{{ weblinks_json_str|escapejs }}' || '[]');
+    loadWlArr(wlData, '#wl-container', '#hidden_weblinks_json');
+    $('#add-wl').click(()=>{
+        const n=$('#wl-container .wl-row').length;
+        $('#wl-container').append(wlRow(null,n,'#wl-container','#hidden_weblinks_json'));
+        serializeWl('#wl-container','#hidden_weblinks_json');
+    });
+    
+    $(function(){
+      // FIX: Use escapejs inside quotes to make VS Code's JS Linter happy!
+      const tbData = JSON.parse('{{ textbooks_json_str|escapejs }}' || '[]');
+      const refData = JSON.parse('{{ reference_books_json_str|escapejs }}' || '[]');
+      
+      loadTbArr(tbData, '#tb-container', '#textbooks_json');
+      loadTbArr(refData, '#ref-container', '#reference_books_json');
+      
+      $('#add-tb').click(()=>{
+        const n=$('#tb-container .tb-row').length;
+        $('#tb-container').append(tbRow(null,n,'#tb-container','#textbooks_json'));
+        serializeTb('#tb-container','#textbooks_json');
+      });
+      $('#add-ref').click(()=>{
+        const n=$('#ref-container .tb-row').length;
+        $('#ref-container').append(tbRow(null,n,'#ref-container','#reference_books_json'));
+        serializeTb('#ref-container','#reference_books_json');
+      });
+    });
 </script>
 </body>
 </html>
